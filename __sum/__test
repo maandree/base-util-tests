@@ -135,11 +135,20 @@ check_case ()
 	rm tmp1 tmp2
 }
 
+check_multi ()
+{
+	$s $(seq 1 5) > tmp1
+	$s $(seq 6 $N) > tmp2
+	$s -c tmp1 tmp2 > /dev/null
+	report $? "check_multi"
+	rm tmp1 tmp2
+}
+
 
 if test $# = 0; then
 	set multiple_files_order multiple_files_delim multiple_files_sum multiple_files one_file \
             stdin dash check_file_match check_stdin_match check_dash_match check_file_mismatch \
-	    check_stdin_mismatch check_dash_mismatch check_case
+	    check_stdin_mismatch check_dash_mismatch check_case check_multi
 fi
 (
 for f in $@; do
