@@ -6,5 +6,5 @@ _/
 *.rej
 *.orig
 *.saved
-tmp
+tmp*
 result*

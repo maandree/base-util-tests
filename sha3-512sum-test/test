@@ -1,0 +1,6 @@
+#!/bin/bash
+
+export tool="${SHA3_512SUM}"
+export algo=sha3-512
+
+exec "$(dirname "$0")/../__sum/__test" "$@"

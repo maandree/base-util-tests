@@ -1,0 +1,6 @@
+#!/bin/bash
+
+export tool="$SHAKE512SUM"
+export algo=shake512
+
+exec "$(dirname "$0")/../__sum/__test" "$@"

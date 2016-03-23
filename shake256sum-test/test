@@ -1,0 +1,6 @@
+#!/bin/bash
+
+export tool="$SHAKE256SUM"
+export algo=shake256
+
+exec "$(dirname "$0")/../__sum/__test" "$@"

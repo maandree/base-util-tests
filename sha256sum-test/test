@@ -1,0 +1,6 @@
+#!/bin/bash
+
+export tool="$SHA256SUM"
+export algo=sha256
+
+exec "$(dirname "$0")/../__sum/__test" "$@"

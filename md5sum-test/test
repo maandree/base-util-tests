@@ -1,0 +1,6 @@
+#!/bin/bash
+
+export tool="$MD5SUM"
+export algo=md5
+
+exec "$(dirname "$0")/../__sum/__test" "$@"
