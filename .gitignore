@@ -7,3 +7,4 @@ _/
 *.orig
 *.saved
 tmp
+result*
