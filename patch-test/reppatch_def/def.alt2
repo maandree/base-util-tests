@@ -1,0 +1,57 @@
+#ifdef x
+0
+#else
+0
+#endif
+1
+2
+3
+#ifdef x
+added
+added
+#endif
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+#ifndef x
+16
+#endif
+17
+18
+#ifndef x
+19
+20
+#endif
+21
+22
+#ifndef x
+23
+24
+25
+#endif
+26
+27
+28
+29
+30
+31
+32
+#ifndef x
+33
+34
+35
+36
+37
+38
+39
+40
+#endif

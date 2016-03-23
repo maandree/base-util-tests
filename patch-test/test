@@ -1,0 +1,1672 @@
+#!/bin/bash
+
+
+
+if test -z "$PATCH"; then
+	PATCH=../../patch
+fi
+if test -z "$FORCE_PATCH"; then
+	FORCE_PATCH="$PATCH -f"
+fi
+p="$PREFIX $PATCH"
+fp="$PREFIX $FORCE_PATCH"
+
+
+
+cd -- "$(dirname "$0")"
+
+if test $# = 0; then
+(
+	env LABEL=1: ./__test
+	env LABEL=2: SUFFIX=-l ./__test
+	env LABEL=3: SUFFIX=-l ./__test lflag
+	env LABEL=4: OLDFILE=new NEWFILE=old SKIPE=x SUFFIX=-R ./__test
+	env LABEL=5: OLDFILE=new NEWFILE=old SKIPE=x SUFFIX=-Rl ./__test
+	env LABEL=6: OLDFILE=new NEWFILE=old SKIPE=x SUFFIX=-Rl ./__test lflag
+	env LABEL=7: CGARBAGE=2 UGARBAGE=2 EGARBAGE=2 SUFFIX=-n ./__test 2> /dev/null
+	env LABEL=8: CGARBAGE=2 NGARBAGE=2 EGARBAGE=2 SUFFIX=-u ./__test 2> /dev/null
+	env LABEL=9: UGARBAGE=2 NGARBAGE=2 EGARBAGE=2 SUFFIX=-c ./__test 2> /dev/null
+	env LABEL=9: CGARBAGE=2 UGARBAGE=2 NGARBAGE=2 SUFFIX=-e ./__test 2> /dev/null
+	env LABEL=10: IFLAG=x ./__test
+	env LABEL=11: SUFFIX=-N ./__test
+	env LABEL=12: SUFFIX=-r/dev/null ./__test
+	env LABEL=13: SUFFIX=-r/dev/null ./__test fuzzy applied ed ed_i
+	env LABEL=14: SUFFIX=-Nr/dev/null ./__test fuzzy applied
+	env LABEL=-Dx: SUFFIX=-Dx NPE=x NEWFILE=def ./__test
+) | tee result1
+fi
+
+report ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED\033[m\n" "$2"
+	fi
+}
+
+report_np ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK (NON-POSIX)\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED (NON-POSIX)\033[m\n" "$2"
+	fi
+}
+
+
+
+reversed_q ()
+{
+	cd 20
+	printf "\033[1;34mPlease answer 'y' to the question.\033[m\n" >&2
+	diff <($p -o- new < patch) old > /dev/null
+	report $? "reversed_q"
+	cd ..
+}
+
+garbage ()
+{
+	cd 20
+	< patch sed 's/^/ /' | $p -o- old > /dev/null 2> tmp
+	test $? = 2 && grep 'contains only garbage' < tmp > /dev/null
+	report $? "garbage"
+	rm tmp
+	cd ..
+}
+
+dryrun_1 ()
+{
+	cd 20
+	$p -o/dev/null old < patch
+	report $? "dryrun_1"
+	cd ..
+}
+
+dryrun_2 ()
+{
+	cd 20
+	$fp -o/dev/null old < patch
+	report $? "dryrun_2"
+	cd ..
+}
+
+dryrun_3 ()
+{
+	cd 20
+	$fp -o/dev/null new < patch 2> /dev/null
+	test $? = 1
+	report $? "dryrun_3"
+	cd ..
+}
+
+bflag ()
+{
+	cd 20
+	if test -f tmp.orig; then
+		rm tmp.orig
+	fi
+	if test -f old.orig; then
+		rm old.orig
+	fi
+	echo 'this fill should already exist' > tmp
+	$p -b -otmp old < patch
+	test $? = 0 && test ! -f old.orig && test -f tmp.orig && diff old tmp.orig > /dev/null
+	report $? "bflag"
+	touch old.orig tmp.orig
+	rm old.orig tmp.orig tmp
+	cd ..
+}
+
+bflag_oflagless ()
+{
+	cd 20
+	if test -f old.orig; then
+		rm old.orig
+	fi
+	cp old tmp
+	$p -b old < patch
+	test $? = 0 && test -f old.orig && diff tmp old.orig > /dev/null
+	report $? "bflag_oflagless"
+	if test -f old.orig; then
+		rm old.orig
+	fi
+	mv tmp old
+	cd ..
+}
+
+bflag_dry ()
+{
+	cd 20
+	$p -b -o/dev/null old < patch
+	test $? = 0 && test ! -f old.orig
+	report $? "bflag_dry"
+	if test -f old.orig; then
+		rm old.orig
+	fi
+	cd ..
+}
+
+dash_file ()
+{
+	cd 20
+	diff <($p -o- -ipatch - < old) new > /dev/null
+	report $? "dash_file"
+	cd ..
+}
+
+det_file_1a ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	diff -u old new > patch-u
+	diff -c old new > patch-c
+	diff <($fp -o- < patch-u) new > /dev/null
+	report $? "det_file_1a -u"
+	diff <($fp -o- < patch-c) new > /dev/null
+	report $? "det_file_1a -c"
+	cd ..
+	rm -r tmp
+}
+
+det_file_1b ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	diff -u old new > patch-u
+	diff -c old new > patch-c
+	mv new new.proper
+	diff <($fp -o- < patch-u) new.proper > /dev/null
+	report $? "det_file_1b -u"
+	diff <($fp -o- < patch-c) new.proper > /dev/null
+	report $? "det_file_1b -c"
+	cd ..
+	rm -r tmp
+}
+
+det_file_2 ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	diff -u old new > patch-u
+	diff -c old new > patch-c
+	rm old
+	diff <($fp -o/dev/null < patch-u 2> /dev/null) new > /dev/null
+	test $? = 1
+	report $? "det_file_2 -u"
+	diff <($fp -o/dev/null < patch-c 2> /dev/null) new > /dev/null
+	test $? = 1
+	report $? "det_file_2 -c"
+	cd ..
+	rm -r tmp
+}
+
+det_file_3 ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	echo 'Index: old.proper' | tee patch-u > patch-c
+	diff -u old new >> patch-u
+	diff -c old new >> patch-c
+	mv old old.proper
+	mv new new.proper
+	diff <($fp -o- < patch-u) new.proper > /dev/null
+	report $? "det_file_3 -u"
+	diff <($fp -o- < patch-c) new.proper > /dev/null
+	report $? "det_file_3 -c"
+	cd ..
+	rm -r tmp
+}
+
+det_file_1a_3 ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	echo 'Index: phony' | tee patch-u > patch-c
+	diff -u old new >> patch-u
+	diff -c old new >> patch-c
+	diff <($fp -o- < patch-u) new > /dev/null
+	report $? "det_file_1a_3 -u"
+	diff <($fp -o- < patch-c) new > /dev/null
+	report $? "det_file_1a_3 -c"
+	cd ..
+	rm -r tmp
+}
+
+det_file_dl ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	echo 'diff a a a a a a a a old.proper new.proper' | tee patch-u > patch-c
+	diff -u old new >> patch-u
+	diff -c old new >> patch-c
+	mv old old.proper
+	mv new new.proper
+	diff <($fp -o- < patch-u) new.proper > /dev/null
+	report_np $? "det_file_dl -u"
+	diff <($fp -o- < patch-c) new.proper > /dev/null
+	report_np $? "det_file_dl -c"
+	cd ..
+	rm -r tmp
+}
+
+det_file_dl1 ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	echo 'diff a a a a a a a a old.proper new' | tee patch-u > patch-c
+	diff -u old new >> patch-u
+	diff -c old new >> patch-c
+	mv old old.proper
+	mv new new.proper
+	diff <($fp -o- < patch-u) new.proper > /dev/null
+	report_np $? "det_file_dl1 -u"
+	diff <($fp -o- < patch-c) new.proper > /dev/null
+	report_np $? "det_file_dl1 -c"
+	cd ..
+	rm -r tmp
+}
+
+det_file_dl2 ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	echo 'diff a a a a a a a a new old.proper' | tee patch-u > patch-c
+	diff -u old new >> patch-u
+	diff -c old new >> patch-c
+	mv old old.proper
+	mv new new.proper
+	diff <($fp -o- < patch-u) new.proper > /dev/null
+	report_np $? "det_file_dl2 -u"
+	diff <($fp -o- < patch-c) new.proper > /dev/null
+	report_np $? "det_file_dl2 -c"
+	cd ..
+	rm -r tmp
+}
+
+det_file_1a_dl ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	echo 'diff a a a a a a a phony phony' | tee patch-u > patch-c
+	diff -u old new >> patch-u
+	diff -c old new >> patch-c
+	diff <($fp -o- < patch-u) new > /dev/null
+	report $? "det_file_1a_dl -u"
+	diff <($fp -o- < patch-c) new > /dev/null
+	report $? "det_file_1a_dl -c"
+	cd ..
+	rm -r tmp
+}
+
+det_file_dl_3 ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	echo 'diff a a a a a a a a old.proper new.proper' | tee patch-u > patch-c
+	echo 'Index: x' >> patch-u
+	echo 'Index: x' >> patch-c
+	diff -u old new >> patch-u
+	diff -c old new >> patch-c
+	mv old old.proper
+	mv new new.proper
+	echo x > x
+	diff <($fp -o- < patch-u) new.proper > /dev/null
+	report_np $? "det_file_dl_3 -u"
+	diff <($fp -o- < patch-c) new.proper > /dev/null
+	report_np $? "det_file_dl_3 -c"
+	cd ..
+	rm -r tmp
+}
+
+det_file_5 ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	diff old new > patch
+	printf "\033[1;34mPlease answer 'old' to the question.\033[m\n" >&2
+	diff <($p -o- < patch) new > /dev/null
+	report $? "det_file_5"
+	cd ..
+	rm -r tmp
+}
+
+oflagless ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	diff old new > patch-u
+	$p old < patch-u
+	diff old new > /dev/null
+	report $? "oflagless -u"
+	cd ..
+	rm -r tmp
+}
+
+dflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	diff -u old new > patch-u
+	mkdir d
+	mv old new d
+	diff <($p -dd -o- < patch-u) d/new > /dev/null
+	report $? "dflag -u"
+	cd ..
+	rm -r tmp
+}
+
+diflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	diff -u old new > patch-u
+	mkdir d
+	mv old new d
+	diff <($p -dd -o- -ipatch-u) d/new > /dev/null
+	report $? "diflag -u"
+	cd ..
+	rm -r tmp
+}
+
+pflagless ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/d
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > d/old
+	printf '%s\n' 1 2 3 x 4 5 > d/new
+	diff -u d/old d/new > patch-u
+	mv d/old d/new .
+	diff <($p -o- < patch-u) new > /dev/null
+	report $? "pflagless -u"
+	cd ..
+	rm -r tmp
+}
+
+p0flag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	diff <($p -p0 -o- < patch-u) a/b/c/new > /dev/null
+	report $? "p0flag -u"
+	cd ..
+	rm -r tmp
+}
+
+p1flag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c tmp/b/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	mv a/b/c/old a/b/c/new b/c
+	diff <($p -p1 -o- < patch-u) b/c/new > /dev/null
+	report $? "p1flag -u"
+	cd ..
+	rm -r tmp
+}
+
+p2flag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c tmp/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	mv a/b/c/old a/b/c/new c
+	diff <($p -p2 -o- < patch-u) c/new > /dev/null
+	report $? "p2flag -u"
+	cd ..
+	rm -r tmp
+}
+
+p1flag_slash ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c tmp/b/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	sed -i s:a/b/c:///a//b//c:g patch-u
+	diff <($p -p1 -o- < patch-u) a/b/c/new > /dev/null
+	report $? "p1flag_slash -u"
+	cd ..
+	rm -r tmp
+}
+
+pdflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c tmp/d/b/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	mv a/b/c/old a/b/c/new d/b/c
+	diff <($p -p1 -dd -o- < patch-u) d/b/c/new > /dev/null
+	report $? "pdflag -u"
+	cd ..
+	rm -r tmp
+}
+
+multipatch ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old-1
+	printf '%s\n' 1 2 3 x 4 5 > new-1
+	printf '%s\n' a b c d e > old-2
+	printf '%s\n' a b c @ d e > new-2
+
+	diff -u old-1 new-1 > patch-uc
+	diff -c old-2 new-2 >> patch-uc
+
+	echo 'Index: old-1' > patch-e
+	diff -e old-1 new-1 >> patch-e
+	echo 'Index: old-2' >> patch-e
+	diff -e old-2 new-2 >> patch-e
+
+	echo 'Index: old-1' > patch
+	diff old-1 new-1 >> patch
+	echo 'Index: old-2' >> patch
+	diff old-2 new-2 >> patch
+
+	cp old-1 1 && cp old-2 2
+	$p < patch-uc && diff old-1 new-1 > /dev/null && diff old-2 new-2 > /dev/null
+	report $? "multipatch -uc"
+	cp 1 old-1 && cp 2 old-2
+	$p < patch-e && diff old-1 new-1 > /dev/null && diff old-2 new-2 > /dev/null
+	report $? "multipatch -e"
+	cp 1 old-1 && cp 2 old-2
+	$p < patch && diff old-1 new-1 > /dev/null && diff old-2 new-2 > /dev/null
+	report $? "multipatch"
+	cd ..
+	rm -r tmp
+}
+
+multipatch_oflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old-1
+	printf '%s\n' 1 2 3 x 4 5 > new-1
+	printf '%s\n' a b c d e > old-2
+	printf '%s\n' a b c @ d e > new-2
+	diff -u old-1 new-1 > patch
+	diff -c old-2 new-2 >> patch
+	diff <($p -o- < patch) <(cat new-1 new-2) > /dev/null
+	report $? "multipatch_oflag -uc"
+	cd ..
+	rm -r tmp
+}
+
+reppatch ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a
+	printf '%s\n' 1 2 3 x 4 5 > b
+	printf '%s\n' 1 2 3 x 4 5 y > c
+
+	diff -u a b > patch-uc
+	diff -c b c >> patch-uc
+
+	diff -e a b > patch-e
+	echo '%%%%%%%%%%%%%' >> patch-e
+	diff -e b c >> patch-e
+
+	diff a b > patch
+	echo '%%%%%%%%%%%%%' >> patch
+	diff b c >> patch
+
+	cp a a.saved
+	$p a < patch-uc && diff a c > /dev/null
+	report $? "reppatch -uc"
+	cp a.saved a
+	$p a < patch-e && diff a c > /dev/null
+	report $? "reppatch -e"
+	cp a.saved a
+	$p a < patch && diff a c > /dev/null
+	report $? "reppatch"
+	cd ..
+	rm -r tmp
+}
+
+reppatch_oflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a
+	printf '%s\n' 1 2 3 x 4 5 > b
+	printf '%s\n' 1 2 3 x 4 5 y > c
+	diff -u a b > patch
+	diff -c b c >> patch
+	diff <($p -o- a < patch) <(cat b c) > /dev/null
+	report $? "reppatch_oflag -uc"
+	cd ..
+	rm -r tmp
+}
+
+reppatch_bflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a
+	cp a a.saved
+	printf '%s\n' 1 2 3 x 4 5 > b
+	printf '%s\n' 1 2 3 x 4 5 y > c
+	diff -u a b > patch
+	diff -c b c >> patch
+	$p -b a < patch
+	diff a c > /dev/null && test -f a.orig && diff a.orig a.saved  > /dev/null
+	report $? "reppatch_bflag -uc"
+	cd ..
+	rm -r tmp
+}
+
+multipatch_bflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old-1
+	printf '%s\n' 1 2 3 x 4 5 > new-1
+	printf '%s\n' a b c d e > old-2
+	printf '%s\n' a b c @ d e > new-2
+	cp old-1 old-1.saved
+	cp old-2 old-2.saved
+	diff -u old-1 new-1 > patch
+	diff -c old-2 new-2 >> patch
+	$p -b < patch
+	diff old-1 new-1 > /dev/null && diff old-2 new-2 > /dev/null && \
+	    test -f old-1.orig && diff old-1.orig old-1.saved > /dev/null && \
+	    test -f old-2.orig && diff old-2.orig old-2.saved > /dev/null
+	report $? "multipatch_bflag -uc"
+	cd ..
+	rm -r tmp
+}
+
+rflag_uflagless ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n'   1 2   3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 r > old
+	printf '%s\n' A 1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > new
+	printf '%s\n'   1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > file
+	echo 'this shall be overridden' > rej
+	diff -c old new > patch-c
+	($fp -o/dev/null -rrej file < patch-c 2> /dev/null ; test $? = 1) &&
+	    diff <($p -o - old < rej) new > /dev/null
+	report $? "rflag_uflagless -c"
+	cd ..
+	rm -r tmp
+}
+
+ruflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n'   1 2   3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 r > old
+	printf '%s\n' A 1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > new
+	printf '%s\n'   1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > file
+	echo 'this shall be overridden' > rej
+	diff -u old new > patch-u
+	($fp -U -o/dev/null -rrej file < patch-u 2> /dev/null ; test $? = 1) &&
+	    diff <($p -o - old < rej) new > /dev/null
+	report_np $? "ruflag -u"
+	cd ..
+	rm -r tmp
+}
+
+rflagless ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n'   1 2   3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 r > old
+	printf '%s\n' A 1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > new
+	printf '%s\n'   1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > file
+	echo 'this shall be overridden' > file.rej
+	diff -c old new > patch-c
+	($fp file < patch-c 2> /dev/null ; test $? = 1) &&
+	    diff <($p -o - old < file.rej) new > /dev/null
+	report $? "rflagless -c"
+	cd ..
+	rm -r tmp
+}
+
+dash_r ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n'   1 2   3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 r > old
+	printf '%s\n' A 1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > new
+	printf '%s\n'   1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > file
+	diff -c old new > patch-c
+	($fp -o/dev/null -r- file < patch-c 2> /dev/null > rej ; test $? = 1) &&
+	    diff <($p -o - old < rej) new > /dev/null
+	report $? "dash_r -c"
+	cd ..
+	rm -r tmp
+}
+
+dash_r_file ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n'   1 2   3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 r > old
+	printf '%s\n' A 1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > new
+	printf '%s\n'   1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > file
+	diff -c old new > patch-c
+	($fp -o/dev/null -r- -ipatch-c - < file 2> /dev/null > rej ; test $? = 1) &&
+	    diff <($p -o - old < rej) new > /dev/null
+	report $? "dash_r_file -c"
+	cd ..
+	rm -r tmp
+}
+
+dash_io ()
+{
+	cd 20
+	diff <($p -o- -i- old < patch) new > /dev/null
+	report $? "dash_io -c"
+	cd ..
+}
+
+dash_ri ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n'   1 2   3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 r > old
+	printf '%s\n' A 1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > new
+	printf '%s\n'   1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > file
+	diff -c old new > patch-c
+	($fp -o/dev/null -r- -i- file < patch-c 2> /dev/null > rej ; test $? = 1) &&
+	    diff <($p -o - old < rej) new > /dev/null
+	report $? "dash_ri -c"
+	cd ..
+	rm -r tmp
+}
+
+dash_o_file ()
+{
+	cd 20
+	diff <($p -o- -ipatch - < old) new > /dev/null
+	report $? "dash_o_file -c"
+	cd ..
+}
+
+dash_rio ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n'   1 2   3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 r > old
+	printf '%s\n' A 1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > new
+	printf '%s\n'   1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > file
+	diff -c old new > patch-c
+	($fp -o- -r- -i- file < patch-c > output 2> /dev/null ; test $? = 1) &&
+	    diff <(tail -n "$(wc -l < file)" < output) file > /dev/null &&
+	    diff <($p -o - old < output) new > /dev/null
+	report $? "dash_rio -c"
+	cd ..
+	rm -r tmp
+}
+
+dash_ro_file ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n'   1 2   3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 r > old
+	printf '%s\n' A 1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > new
+	printf '%s\n'   1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > file
+	diff -c old new > patch-c
+	($fp -o- -r- -ipatch-c - < file > output 2> /dev/null ; test $? = 1) &&
+	    diff <(tail -n "$(wc -l < file)" < output) file > /dev/null &&
+	    diff <($p -o - old < output) new > /dev/null
+	report $? "dash_ro_file -c"
+	cd ..
+	rm -r tmp
+}
+
+rej_dash_io ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n'   1 2   3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 r > old
+	printf '%s\n' A 1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > new
+	printf '%s\n'   1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > file
+	diff -c old new > patch-c
+	($fp -o- -i- file < patch-c > output 2> /dev/null ; test $? = 1) &&
+	    diff output file > /dev/null &&
+	    diff <($p -o - old < -.rej) new > /dev/null
+	report $? "rej_dash_io -c"
+	cd ..
+	rm -r tmp
+}
+
+rej_dash_o_file ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n'   1 2   3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 r > old
+	printf '%s\n' A 1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > new
+	printf '%s\n'   1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > file
+	diff -c old new > patch-c
+	($fp -o- -ipatch-c - < file > output 2> /dev/null ; test $? = 1) &&
+	    diff output file > /dev/null &&
+	    diff <($p -o - old < -.rej) new > /dev/null
+	report $? "rej_dash_o_file -c"
+	cd ..
+	rm -r tmp
+}
+
+dash_o_append ()
+{
+	cp -r 20 tmp
+	cd tmp
+	echo 'this shall be preserved' > output
+	$fp -o- old < patch >> output
+	sed -i 1d output
+	diff output new > /dev/null
+	report $? "dash_o_append"
+	cd ..
+	rm -r tmp
+}
+
+dash_o_truncate ()
+{
+	cp -r 20 tmp
+	cd tmp
+	echo 'this shall be overridden' > output
+	$fp -o- old < patch > output
+	diff output new > /dev/null
+	report $? "dash_o_truncate"
+	cd ..
+	rm -r tmp
+}
+
+stdout_o_append ()
+{
+	cp -r 20 tmp
+	cd tmp
+	echo 'this shall be preserved' > output
+	$fp -o/dev/fd/1 old < patch >> output
+	sed -i 1d output
+	diff output new > /dev/null
+	report $? "stdout_o_truncate"
+	cd ..
+	rm -r tmp
+}
+
+bflag_dash_rio ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n'   1 2   3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 r > old
+	printf '%s\n' A 1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > new
+	printf '%s\n'   1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > file
+	diff -c old new > patch-c
+	($fp -b -o- -r- -i- file < patch-c > output 2> /dev/null ; test $? = 1) &&
+	    diff <(tail -n "$(wc -l < file)" < output) file > /dev/null &&
+	    diff <($p -o - old < output) new > /dev/null &&
+	    test ! -f file.orig && test ! -f ./-.orig > /dev/null
+	report $? "bflag_dash_rio -c"
+	cd ..
+	rm -r tmp
+}
+
+bflag_dash_ro_file ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n'   1 2   3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 r > old
+	printf '%s\n' A 1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > new
+	printf '%s\n'   1 2 a 3 4 5 6 7 8 9 10 11 xx 13 14 15 16 17 18 19 20   > file
+	diff -c old new > patch-c
+	($fp -b -o- -r- -ipatch-c - < file > output 2> /dev/null ; test $? = 1) &&
+	    diff <(tail -n "$(wc -l < file)" < output) file > /dev/null &&
+	    diff <($p -o - old < output) new > /dev/null &&
+	    test ! -f ./-.orig > /dev/null
+	report $? "bflag_ro_file -c"
+	cd ..
+	rm -r tmp
+}
+
+symlink ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	cp -r 20 tmp
+	cd tmp
+	mv old old.proper
+	ln -s old.proper old
+	$p old < patch &&
+	    diff old.proper new > /dev/null &&
+	    diff old new > /dev/null
+	test $? = 0 && test -L old
+	report $? "symlink"
+	cd ..
+	rm -r tmp
+}
+
+mode ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	cp -r 20 tmp
+	cd tmp
+	chmod 777 old
+	$p old < patch &&
+	    diff old new > /dev/null &&
+	    test $(stat old | grep Access | grep -Po '\([0-8]*/' | sed -e 's/^.//' -e 's/.$//') = 0777
+	report $? "mode"
+	cd ..
+	rm -r tmp
+}
+
+reppatch_ndef ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	cp -r reppatch_def tmp
+	cd tmp
+	cp old tmp
+	$p tmp < patch-u && diff tmp new > /dev/null
+	report $? "reppatch_ndef -u"
+	cp old tmp
+	$p tmp < patch-u0 && diff tmp new > /dev/null
+	report $? "reppatch_ndef -U0"
+	cp old tmp
+	$p tmp < patch-u1 && diff tmp new > /dev/null
+	report $? "reppatch_ndef -U1"
+	cp old tmp
+	$p tmp < patch-c && diff tmp new > /dev/null
+	report $? "reppatch_ndef -c"
+	cp old tmp
+	$p tmp < patch-c0 && diff tmp new > /dev/null
+	report $? "reppatch_ndef -C0"
+	cp old tmp
+	$p tmp < patch-c1 && diff tmp new > /dev/null
+	report $? "reppatch_ndef -C1"
+	cp old tmp
+	$p tmp < patch-e && diff tmp new > /dev/null
+	report $? "reppatch_ndef -e"
+	cp old tmp
+	$p tmp < patch && diff tmp new > /dev/null
+	report $? "reppatch_ndef"
+	cd ..
+	rm -r tmp
+}
+
+reppatch_def ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	cp -r reppatch_def tmp
+	cd tmp
+	cp old tmp
+	$p -Dx tmp < patch-u
+	if test $? = 0; then
+		if diff tmp def > /dev/null; then
+			printf "\033[1;32mTest reppatch_def -u OK\033[m\n"
+		elif diff tmp def.alt1 > /dev/null || diff tmp def.alt2 > /dev/null; then
+			printf "\033[1;33mTest reppatch_def -u ACCEPTABLE\033[m\n"
+		else
+			printf "\033[1;31mTest reppatch_def -u FAILED\033[m\n"
+		fi
+	else
+		printf "\033[1;31mTest reppatch_def -u FAILED\033[m\n"
+	fi
+	cp old tmp
+	$p -Dx tmp < patch-u0
+	if test $? = 0; then
+		if diff tmp def > /dev/null; then
+			printf "\033[1;32mTest reppatch_def -U0 OK\033[m\n"
+		elif diff tmp def.alt1 > /dev/null || diff tmp def.alt2 > /dev/null; then
+			printf "\033[1;33mTest reppatch_def -U0 ACCEPTABLE\033[m\n"
+		else
+			printf "\033[1;31mTest reppatch_def -U0 FAILED\033[m\n"
+		fi
+	else
+		printf "\033[1;31mTest reppatch_def -U0 FAILED\033[m\n"
+	fi
+	cp old tmp
+	$p -Dx tmp < patch-u1
+	if test $? = 0; then
+		if diff tmp def > /dev/null; then
+			printf "\033[1;32mTest reppatch_def -U1 OK\033[m\n"
+		elif diff tmp def.alt1 > /dev/null || diff tmp def.alt2 > /dev/null; then
+			printf "\033[1;33mTest reppatch_def -U1 ACCEPTABLE\033[m\n"
+		else
+			printf "\033[1;31mTest reppatch_def -U1 FAILED\033[m\n"
+		fi
+	else
+		printf "\033[1;31mTest reppatch_def -U1 FAILED\033[m\n"
+	fi
+	cp old tmp
+	$p -Dx tmp < patch-c
+	if test $? = 0; then
+		if diff tmp def > /dev/null; then
+			printf "\033[1;32mTest reppatch_def -c OK\033[m\n"
+		elif diff tmp def.alt1 > /dev/null || diff tmp def.alt2 > /dev/null; then
+			printf "\033[1;33mTest reppatch_def -c ACCEPTABLE\033[m\n"
+		else
+			printf "\033[1;31mTest reppatch_def -c FAILED\033[m\n"
+		fi
+	else
+		printf "\033[1;31mTest reppatch_def -c FAILED\033[m\n"
+	fi
+	cp old tmp
+	$p -Dx tmp < patch-c0
+	if test $? = 0; then
+		if diff tmp def > /dev/null; then
+			printf "\033[1;32mTest reppatch_def -C0 OK\033[m\n"
+		elif diff tmp def.alt1 > /dev/null || diff tmp def.alt2 > /dev/null; then
+			printf "\033[1;33mTest reppatch_def -C0 ACCEPTABLE\033[m\n"
+		else
+			printf "\033[1;31mTest reppatch_def -C0 FAILED\033[m\n"
+		fi
+	else
+		printf "\033[1;31mTest reppatch_def -C0 FAILED\033[m\n"
+	fi
+	cp old tmp
+	$p -Dx tmp < patch-c1
+	if test $? = 0; then
+		if diff tmp def > /dev/null; then
+			printf "\033[1;32mTest reppatch_def -C1 OK\033[m\n"
+		elif diff tmp def.alt1 > /dev/null || diff tmp def.alt2 > /dev/null; then
+			printf "\033[1;33mTest reppatch_def -C1 ACCEPTABLE\033[m\n"
+		else
+			printf "\033[1;31mTest reppatch_def -C1 FAILED\033[m\n"
+		fi
+	else
+		printf "\033[1;31mTest reppatch_def -C1 FAILED\033[m\n"
+	fi
+	cp old tmp
+	$p -Dx tmp < patch-e
+	if test $? = 0; then
+		if diff tmp def > /dev/null; then
+			printf "\033[1;32mTest reppatch_def -e OK\033[m\n"
+		elif diff tmp def.alt1 > /dev/null || diff tmp def.alt2 > /dev/null; then
+			printf "\033[1;33mTest reppatch_def -e ACCEPTABLE\033[m\n"
+		else
+			printf "\033[1;31mTest reppatch_def -e FAILED\033[m\n"
+		fi
+	else
+		printf "\033[1;31mTest reppatch_def -e FAILED\033[m\n"
+	fi
+	cp old tmp
+	$p -Dx tmp < patch
+	if test $? = 0; then
+		if diff tmp def > /dev/null; then
+			printf "\033[1;32mTest reppatch_def OK\033[m\n"
+		elif diff tmp def.alt1 > /dev/null || diff tmp def.alt2 > /dev/null; then
+			printf "\033[1;33mTest reppatch_def ACCEPTABLE\033[m\n"
+		else
+			printf "\033[1;31mTest reppatch_def FAILED\033[m\n"
+		fi
+	else
+		printf "\033[1;31mTest reppatch_def FAILED\033[m\n"
+	fi
+	cd ..
+	rm -r tmp
+}
+
+def_excl ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 > old
+	printf '%s\n' 1 x 2 > new
+	diff -u old new > patch-u
+	printf '%s\n' 1 '#ifndef x' x '#endif' 2 > new
+	$p -D\!x old < patch-u && diff old new > /dev/null
+	report_np $? "def_excl -u"
+	cd ..
+	rm -r tmp
+}
+
+def_zero ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 > old
+	printf '%s\n' 1 x 2 > new
+	diff -u old new > patch-u
+	printf '%s\n' 1 '#if 0' x '#endif' 2 > new
+	$p -D0 old < patch-u && diff old new > /dev/null
+	report_np $? "def_zero -u"
+	cd ..
+	rm -r tmp
+}
+
+def_one ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 > old
+	printf '%s\n' 1 x 2 > new
+	diff -u old new > patch-u
+	printf '%s\n' 1 '#if 1' x '#endif' 2 > new
+	$p -D1 old < patch-u && diff old new > /dev/null
+	report_np $? "def_one -u"
+	cd ..
+	rm -r tmp
+}
+
+def_excl_one ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 > old
+	printf '%s\n' 1 x 2 > new
+	diff -u old new > patch-u
+	printf '%s\n' 1 '#if 0' x '#endif' 2 > new
+	$p -D\!1 old < patch-u && diff old new > /dev/null
+	report_np $? "def_excl_one -u"
+	cd ..
+	rm -r tmp
+}
+
+rej_multipatch ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old-1
+	printf '%s\n' 1 2 3 x 4 5 > new-1
+	printf '%s\n' a b c d e > old-2
+	printf '%s\n' a b c @ d e > new-2
+	diff -c old-1 new-1 > patch-c
+	diff -c old-2 new-2 >> patch-c
+	mv old-1 old1.saved
+	mv old-2 old2.saved
+	cat > rej-1 <<EOF
+***************
+*** 1,5
+--- 1,6
+  1
+  2
+  3
++ x
+  4
+  5
+EOF
+	cat > rej-2 <<EOF
+***************
+*** 1,5
+--- 1,6
+  a
+  b
+  c
++ @
+  d
+  e
+EOF
+	$fp < patch-c 2> /dev/null
+	test $? = 1 && test -f new-1.rej && test -f new-2.rej &&
+	   diff <(sed -e 's/ \*\*\*\*$//' -e 's/ ----$//' < new-1.rej | sed 1,2d) rej-1 >/dev/null &&
+	   diff <(sed -e 's/ \*\*\*\*$//' -e 's/ ----$//' < new-2.rej | sed 1,2d) rej-2 >/dev/null
+	report $? "multipatch -c"
+	cd ..
+	rm -r tmp
+}
+
+doflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	diff -u old new > patch-u
+	mkdir d
+	mv old new d
+	$p -dd -otmp < patch-u && diff tmp d/new > /dev/null
+	report $? "doflag -u"
+	cd ..
+	rm -r tmp
+}
+
+dioflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir tmp
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	diff -u old new > patch-u
+	mkdir d
+	mv old new d
+	$p -dd -otmp -ipatch-u && diff tmp d/new > /dev/null
+	report $? "dioflag -u"
+	cd ..
+	rm -r tmp
+}
+
+piflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c tmp/b/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	mv a/b/c/old a/b/c/new b/c
+	diff <($p -p1 -o- -ipatch-u) b/c/new > /dev/null
+	report $? "piflag -u"
+	cd ..
+	rm -r tmp
+}
+
+poflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c tmp/b/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	mv a/b/c/old a/b/c/new b/c
+	$p -p1 -otmp < patch-u && diff tmp b/c/new > /dev/null
+	report $? "poflag -u"
+	cd ..
+	rm -r tmp
+}
+
+pioflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c tmp/b/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	mv a/b/c/old a/b/c/new b/c
+	$p -p1 -otmp -ipatch-u && diff tmp b/c/new > /dev/null
+	report $? "pioflag -u"
+	cd ..
+	rm -r tmp
+}
+
+pdiflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c tmp/d/b/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	mv a/b/c/old a/b/c/new d/b/c
+	diff <($p -p1 -dd -o- -ipatch-u) d/b/c/new > /dev/null
+	report $? "pdiflag -u"
+	cd ..
+	rm -r tmp
+}
+
+pdioflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c tmp/d/b/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	mv a/b/c/old a/b/c/new d/b/c
+	$p -p1 -dd -otmp -ipatch-u && diff tmp d/b/c/new > /dev/null
+	report $? "pdioflag -u"
+	cd ..
+	rm -r tmp
+}
+
+pdoflag ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c tmp/d/b/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	mv a/b/c/old a/b/c/new d/b/c
+	$p -p1 -dd -otmp < patch-u && diff tmp d/b/c/new > /dev/null
+	report $? "pdoflag -u"
+	cd ..
+	rm -r tmp
+}
+
+pdflag_absolute ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/xx
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	diff -u -- "$(realpath old)" "$(realpath new)" > patch-u
+	diff <($fp -dxx -p0 -o- < patch-u) new > /dev/null
+	report $? "pdflag_absolute -u"
+	cd ..
+	rm -r tmp
+}
+
+explicit_absolute ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/xx
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	diff -u -- "$(realpath old)" "$(realpath new)" > patch-u
+	diff <($fp -d/ -p1 -o- < patch-u) new > /dev/null
+	report $? "explicit_absolute -u"
+	cd ..
+	rm -r tmp
+}
+
+pflag_excess ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	mv a/b/c/old a/b/c/new .
+	$fp -p1000 -o- < patch-u > /dev/null
+	test $? = 2
+	report $? "pflag_excess -u"
+	cd ..
+	rm -r tmp
+}
+
+pflag_excess_one ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/old a/b/c/new > patch-u
+	mv a/old a/b/c/new .
+	$p -R -p3 -o- new < patch-u > tmp
+	test $? = 0 && diff tmp old > /dev/null
+	report $? "pflag_excess_one -u"
+	cd ..
+	rm -r tmp
+}
+
+pflag_file ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c tmp/b/c
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	mv a/b/c/old a/b/c/new b/c
+	diff <($p -p3 -o- b/c/old < patch-u) b/c/new > /dev/null
+	report $? "pflag_file -u"
+	cd ..
+	rm -r tmp
+}
+
+dflag_file ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/xx
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > old
+	printf '%s\n' 1 2 3 x 4 5 > new
+	diff -u old new > patch-u
+	diff <($p -dxx -o- old < patch-u) new > /dev/null
+	report $? "dflag_file -u"
+	cd ..
+	rm -r tmp
+}
+
+pdflag_file ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	mkdir -p tmp/a/b/c tmp/b/c tmp/xx
+	cd tmp
+	printf '%s\n' 1 2 3 4 5 > a/b/c/old
+	printf '%s\n' 1 2 3 x 4 5 > a/b/c/new
+	diff -u a/b/c/old a/b/c/new > patch-u
+	mv a/b/c/old a/b/c/new b/c
+	diff <($p -dxx -p3 -o- b/c/old < patch-u) b/c/new > /dev/null
+	report $? "pdflag_file -u"
+	cd ..
+	rm -r tmp
+}
+
+nonascii_name ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	cp -r 20 tmp
+	cd tmp
+	mv new new.saved
+	cp old old.saved
+	mv old åäö
+	sed -i 's/old/åäö/' patch-u
+	sed -i 's/old/åäö/' patch-c
+	$p < patch-u > /dev/null && diff åäö new.saved > /dev/null
+	report_np $? "nonascii_name -u"
+	cp old.saved åäö
+	$p < patch-c > /dev/null && diff åäö new.saved > /dev/null
+	report_np $? "nonascii_name -c"
+	cd ..
+	rm -r tmp
+}
+
+nonascii_name_indexline ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	cp -r 20 tmp
+	cd tmp
+	mv patch tmp
+	echo 'Index: åäö' > patch
+	cat tmp >> patch
+	mv old åäö
+	mv new new.saved
+	$p < patch > /dev/null && diff åäö new.saved > /dev/null
+	report_np $? "nonascii_name_indexline"
+	cd ..
+	rm -r tmp
+}
+
+quoted_name ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	cp -r 20 tmp
+	cd tmp
+	cp old old.saved
+	mv old åäö
+	diff -u åäö new > patch-u
+	diff -c åäö new > patch-c
+	mv new new.saved
+	$p < patch-u > /dev/null && diff åäö new.saved > /dev/null
+	report_np $? "quoted_name -u"
+	cp old.saved åäö
+	$p < patch-c > /dev/null && diff åäö new.saved > /dev/null
+	report_np $? "quoted_name -c"
+	cd ..
+	rm -r tmp
+}
+
+quoted_name_indexline ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	cp -r 20 tmp
+	cd tmp
+	mv patch tmp
+	echo 'Index: "\303\245\303\244\303\266"' > patch
+	cat tmp >> patch
+	mv old åäö
+	mv new new.saved
+	$p < patch > /dev/null && diff åäö new.saved > /dev/null
+	report_np $? "quoted_name_indexline"
+	cd ..
+	rm -r tmp
+}
+
+quoted_name_diffline ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	cp -r 20 tmp
+	cd tmp
+	mv patch tmp
+	echo 'diff '\'' x x '\'' "\303\245\303\244\303\266" new' > patch
+	cat tmp >> patch
+	mv old åäö
+	mv new new.saved
+	$p < patch > /dev/null && diff åäö new.saved > /dev/null
+	report_np $? "quoted_name_diffline"
+	cd ..
+	rm -r tmp
+}
+
+quote_format ()
+{
+	if test -d tmp; then
+		rm -r tmp
+	fi
+	cp -r 20 tmp
+	cd tmp
+	mv patch tmp
+	cname='a\a\b\f\n\r\t\vbcd\x80\x80\123'
+	name="$(printf "${cname}")"
+	echo 'Index: "'"${cname}"'"' > patch
+	cat tmp >> patch
+	mv old "${name}"
+	mv new new.saved
+	$p < patch > /dev/null && diff "${name}" new.saved > /dev/null
+	report_np $? "quote_format"
+	cd ..
+	rm -r tmp
+}
+
+if test $# = 0; then
+	set reversed_q garbage dryrun_1 dryrun_2 dryrun_3 bflag dash_file det_file_1a det_file_1b \
+	    det_file_2 det_file_3 det_file_1a_3 det_file_dl det_file_dl1 det_file_dl2 det_file_1a_dl \
+	    det_file_dl_3 det_file_5 oflagless dflag diflag pflagless p0flag p1flag p2flag p1flag_slash \
+	    pdflag multipatch multipatch_oflag reppatch reppatch_oflag reppatch_bflag multipatch_bflag \
+	    rflag_uflagless ruflag rflagless dash_r dash_r_file dash_io dash_ri dash_o_file dash_rio \
+            dash_ro_file rej_dash_io rej_dash_o_file dash_o_append dash_o_truncate stdout_o_append \
+	    bflag_dash_rio bflag_dash_ro_file bflag_dry bflag_oflagless symlink mode reppatch_ndef \
+	    reppatch_def def_excl def_zero def_one def_excl_one rej_multipatch doflag dioflag piflag \
+	    poflag pioflag pdiflag pdoflag pdioflag pdflag_absolute explicit_absolute pflag_excess \
+	    pflag_excess_one pflag_file dflag_file pdflag_file nonascii_name nonascii_name_indexline \
+	    quoted_name quoted_name_indexline quoted_name_diffline quote_format
+fi
+(
+for f in $@; do
+	$f
+done
+) | tee result2
+
+touch result1 result2
+cat result1 result2 > result
+! grep FAILED < result >/dev/null
+ret=$?
+rm result1 result2 result
+exit $ret

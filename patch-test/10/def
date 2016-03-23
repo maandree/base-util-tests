@@ -1,0 +1,13 @@
+a
+a
+a
+a
+a
+#ifdef x
+b
+#endif
+a
+a
+a
+a
+a

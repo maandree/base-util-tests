@@ -1,0 +1,41 @@
+#ifndef x
+bb
+#else
+BB
+#endif
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+#ifndef x
+bb
+bb
+#else
+BB
+BB
+#endif
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+#ifndef x
+bb
+bb
+bb
+#else
+BB
+BB
+BB
+#endif

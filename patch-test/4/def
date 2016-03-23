@@ -1,0 +1,5 @@
+#ifndef x
+hi
+#else
+hej
+#endif

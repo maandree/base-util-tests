@@ -1,0 +1,120 @@
+#!/bin/bash
+
+
+N=26
+
+if test -z "$PATCH"; then
+	PATCH=../../patch
+fi
+
+
+if test -z $NGARBAGE; then
+	NGARBAGE=0
+fi
+if test -z $UGARBAGE; then
+	UGARBAGE=0
+fi
+if test -z $CGARBAGE; then
+	CGARBAGE=0
+fi
+if test -z $EGARBAGE; then
+	EGARBAGE=0
+fi
+if test -z $OLDFILE; then
+	OLDFILE=old
+fi
+if test -z $NEWFILE; then
+	NEWFILE=new
+fi
+p="$PREFIX $PATCH $SUFFIX -o -"
+cd -- "$(dirname "$0")"
+if test $# = 0; then
+	set $(seq $N)
+fi
+run ()
+{
+	if test $1 = patch; then
+	    x=$NGARBAGE
+	    f=""
+	elif test $1 = patch-u; then
+	    x=$UGARBAGE
+	    f=" -u"
+	elif test $1 = patch-u0; then
+	    x=$UGARBAGE
+	    f=" -U0"
+	elif test $1 = patch-u1; then
+	    x=$UGARBAGE
+	    f=" -U1"
+	elif test $1 = patch-c; then
+	    x=$CGARBAGE
+	    f=" -c"
+	elif test $1 = patch-c0; then
+	    x=$CGARBAGE
+	    f=" -C0"
+	elif test $1 = patch-c1; then
+	    x=$CGARBAGE
+	    f=" -C1"
+	elif test $1 = patch-e; then
+	    x=$EGARBAGE
+	    f=" -e"
+	fi
+
+	if test -f $1; then
+		if test $2 = fuzzy || test $2 = applied; then
+			exec 3>&2
+			exec 2>tmp
+		fi
+
+		if test -z $IFLAG; then
+			if test $x = 0; then
+				diff <($p < $1 $OLDFILE) $NEWFILE > /dev/null
+			else
+				$p < $1 $OLDFILE > /dev/null
+			fi
+		else
+			if test $x = 0; then
+				diff <($p -i$1 $OLDFILE) $NEWFILE > /dev/null
+			else
+				$p -i$1 $OLDFILE > /dev/null
+			fi
+		fi
+		val=$?
+		if test $val = $x && test $2 = fuzzy; then
+			grep 'ward fuzz' < tmp >/dev/null
+			val=$?
+		elif test $val = $x && test $2 = applied; then
+			grep 'hunk number 2 of 2' < tmp >/dev/null
+			val=$?
+		fi
+
+		if test $val = $x; then
+			printf "\033[1;32mTest %s%s%s OK%s\033[m\n" "$LABEL" $2 "$f" "$3"
+		else
+			printf "\033[1;31mTest %s%s%s FAILED%s\033[m\n" "$LABEL" $2 "$f" "$3"
+		fi
+
+		if test $2 = fuzzy || test $2 = applied; then
+			exec 2>&3
+			exec 3>&-
+			rm tmp
+		fi
+	fi
+}
+for i in $@; do
+	cd $i
+	run patch $i
+	run patch-u $i
+	run patch-u0 $i
+	run patch-u1 $i
+	run patch-c $i
+	run patch-c0 $i
+	run patch-c1 $i
+	if test -z $SKIPE; then
+		if test -z $NPE; then
+			run patch-e $i
+		else
+			run patch-e $i " (NON-POSIX)"
+		fi
+	fi
+	cd ..
+done
