@@ -69,7 +69,7 @@ garbage ()
 {
 	cd 20
 	< patch sed 's/^/ /' | $p -o- old > /dev/null 2> tmp
-	test $? = 2 && grep 'contains only garbage' < tmp > /dev/null
+	test $? -gt 1 && grep 'contains only garbage' < tmp > /dev/null
 	report $? "garbage"
 	rm tmp
 	cd ..
@@ -1455,7 +1455,7 @@ pflag_excess ()
 	diff -u a/b/c/old a/b/c/new > patch-u
 	mv a/b/c/old a/b/c/new .
 	$fp -p1000 -o- < patch-u > /dev/null
-	test $? = 2
+	test $? -gt 1
 	report $? "pflag_excess -u"
 	cd ..
 	rm -r tmp
