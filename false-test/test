@@ -19,7 +19,7 @@ report ()
 
 args0 ()
 {
-	! $t 
+	! $t
 	report $? "args0"
 }
 
