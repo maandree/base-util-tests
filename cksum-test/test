@@ -72,9 +72,16 @@ dash ()
 	rm tmp1 tmp2 tmp3
 }
 
+massive ()
+{
+	diff <($s $(cat bytes)) ${algo}-bytes > /dev/null
+	report $? "massive"
+}
+
 
 if test $# = 0; then
-	set multiple_files_order multiple_files_sum multiple_files one_file stdin dash
+	set multiple_files_order multiple_files_sum multiple_files \
+	    one_file stdin dash massive
 fi
 (
 for f in $@; do

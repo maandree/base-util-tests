@@ -6,7 +6,7 @@ function all()
 {
 	echo patch md5sum rawshake256sum rawshake512sum sha1sum sha224sum sha256sum sha3-224sum \
 	     sha3-256sum sha3-384sum sha3-512sum sha384sum sha512-224sum sha512-256sum sha512sum \
-	     shake256sum shake512sum true false echo
+	     shake256sum shake512sum cksum true false echo
 }
 
 if test -n "${IN_PATH}"; then

@@ -144,11 +144,17 @@ check_multi ()
 	rm tmp1 tmp2
 }
 
+massive ()
+{
+	diff <($s $(cat bytes)) ${algo}-bytes > /dev/null
+	report $? "massive"
+}
+
 
 if test $# = 0; then
 	set multiple_files_order multiple_files_delim multiple_files_sum multiple_files one_file \
             stdin dash check_file_match check_stdin_match check_dash_match check_file_mismatch \
-	    check_stdin_mismatch check_dash_mismatch check_case check_multi
+	    check_stdin_mismatch check_dash_mismatch check_case check_multi massive
 fi
 (
 for f in $@; do
