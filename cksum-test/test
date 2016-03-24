@@ -1,0 +1,87 @@
+#!/bin/bash
+
+cd -- "$(dirname "$0")/../__sum"
+N=14
+algo=ck
+if test -z "$CKSUM"; then
+	CKSUM=../${algo}sum
+fi
+s="$PREFIX $CKSUM"
+
+report ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED\033[m\n" "$2"
+	fi
+}
+
+multiple_files_order ()
+{
+	$s $(seq 1 $N) | sed -e 's/[\t ]\+/ /g' | cut -d ' ' -f 3 > tmp1
+	< $algo cut -d ' ' -f 3 > tmp2
+	diff tmp1 tmp2 > /dev/null
+	report $? "multiple_files_order"
+	rm tmp1 tmp2
+}
+
+multiple_files_sum ()
+{
+	$s $(seq 1 $N) | sed -e 's/[\t ]\+/ /g' | cut -d ' ' -f 1,2 | sort > tmp1
+	< $algo cut -d ' ' -f 1,2 | sort > tmp2
+	diff tmp1 tmp2 > /dev/null
+	report $? "multiple_files_sum"
+	rm tmp1 tmp2
+}
+
+multiple_files ()
+{
+	$s $(seq 1 $N) > tmp1
+	diff tmp1 $algo > /dev/null
+	report $? "multiple_files"
+	rm tmp1
+}
+
+one_file ()
+{
+	$s 1 > tmp1
+	< $algo head -n 1 > tmp2
+	diff tmp1 tmp2 > /dev/null
+	report $? "one_file"
+	rm tmp1 tmp2
+}
+
+stdin ()
+{
+	$s < 1 | sed 's/[\t ]\+/ /' > tmp1
+	< $algo head -n 1 | cut -d ' ' -f 1,2 > tmp2
+	diff tmp1 tmp2 > /dev/null
+	report $? "stdin"
+	rm tmp1 tmp2
+}
+
+dash ()
+{
+	$s - < 1 | sed 's/[\t ]\+/ /g' | tee tmp3 | cut -d ' ' -f 1,2 > tmp1
+	< $algo head -n 1 | cut -d ' ' -f 1,2 > tmp2
+	diff tmp1 tmp2 > /dev/null &&
+	    test $(grep -o ' ' < tmp3 | wc -l) = 2 &&
+	    test -n "$(cut -d ' ' -f 3 < tmp3)"
+	report $? "dash"
+	rm tmp1 tmp2 tmp3
+}
+
+
+if test $# = 0; then
+	set multiple_files_order multiple_files_sum multiple_files one_file stdin dash
+fi
+(
+for f in $@; do
+	$f
+done
+) | tee result
+! grep FAILED < result >/dev/null
+ret=$?
+rm result
+exit $ret
