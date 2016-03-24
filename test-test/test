@@ -1,0 +1,560 @@
+#!/bin/bash
+
+if test -z "$TEST"; then
+	TEST=../test
+fi
+if echo "$TEST" | grep / > /dev/null; then
+	b="$PREFIX $(dirname "$TEST")/["
+else
+	b="$PREFIX ["
+fi
+t="$PREFIX $TEST"
+
+report ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED\033[m\n" "$2"
+	fi
+}
+
+report_np ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK (NON-POSIX)\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED (NON-POSIX)\033[m\n" "$2"
+	fi
+}
+
+T ()
+{
+    $t "$@" && $b "$@" \]
+}
+
+F ()
+{
+    ! $t "$@" && ! $b "$@" \]
+}
+
+
+bracket ()
+{
+	! $t -e . \] 2> /dev/null &&
+	$b -e . \] &&
+	! $b -e . \] -e . 2> /dev/null
+	report $? "bracket"
+}
+
+bflag ()
+{
+	T -b /dev/sda &&
+	F -b /dev/null
+	report $? "bflag"
+}
+
+cflag ()
+{
+	T -c /dev/null &&
+	F -c /dev/sda
+	report $? "cflag"
+}
+
+dflag ()
+{
+	T -d . &&
+	F -d test
+	report $? "dflag"
+}
+
+eflag ()
+{
+	ln -sf /erefdsghw4th42hwrgb tmp
+	T -e /dev/sda &&
+	T -e /dev/null &&
+	T -e /dev &&
+	T -e test &&
+	T -e . &&
+	F -e /erefdsghw4th42hwrgb &&
+	F -e tmp
+	report $? "eflag"
+	rm tmp
+}
+
+fflag ()
+{
+	ln -sf test tmp
+	T -f test &&
+	F -f . &&
+	F -f /dev/null &&
+	T -f tmp
+	report $? "fflag"
+	rm tmp
+}
+
+gflag ()
+{
+	touch tmp1; rm tmp1
+	touch tmp2; rm tmp2
+	touch tmp1 tmp2
+	chmod 5600 tmp1
+	chmod 2600 tmp2
+	F -g tmp1 &&
+	T -g tmp2
+	report $? "gflag"
+	rm tmp1 tmp2
+}
+
+hflag_1 ()
+{
+	touch tmp; rm tmp
+	ln -sf / tmp
+	T -h tmp &&
+	F -h /
+	report $? "hflag_1"
+	rm tmp
+}
+
+hflag_2 ()
+{
+	touch tmp; rm tmp
+	ln -sf /3tgrgtrghwhgsh tmp
+	T -h tmp &&
+	F -h /
+	report $? "hflag_2"
+	rm tmp
+}
+
+kflag ()
+{
+	touch tmp1; rm tmp1
+	touch tmp2; rm tmp2
+	touch tmp1 tmp2
+	chmod 6600 tmp1
+	chmod 1600 tmp2
+	F -k tmp1 &&
+	T -k tmp2
+	report_np $? "kflag"
+	rm tmp1 tmp2
+}
+
+Lflag_1 ()
+{
+	touch tmp; rm tmp
+	ln -sf / tmp
+	T -L tmp &&
+	F -L /
+	report $? "Lflag_1"
+	rm tmp
+}
+
+Lflag_2 ()
+{
+	touch tmp; rm tmp
+	ln -sf /3tgrgtrghwhgsh tmp
+	T -L tmp &&
+	F -L /
+	report $? "Lflag_2"
+	rm tmp
+}
+
+nflag ()
+{
+	T -n . &&
+	F -n ''
+	report $? "nflag"
+}
+
+pflag ()
+{
+	touch tmp; rm tmp
+	touch tmp
+	F -p tmp
+	r=$?
+	rm tmp
+	mkfifo tmp
+	test $r = 0 && T -p tmp
+	report $? "pflag"
+	rm tmp
+}
+
+rflag ()
+{
+	touch tmp; rm tmp
+	touch tmp
+	chmod 0 tmp
+	F -r tmp
+	r=$?
+	chmod o+r tmp
+	test $r = 0 && F -r tmp
+	r=$?
+	chmod u+r tmp
+	test $r = 0 && T -r tmp
+	report $? "rflag"
+	chmod u+w tmp
+	rm tmp
+}
+
+sflag ()
+{
+	touch tmp1; rm tmp1
+	touch tmp2; rm tmp2
+	touch tmp1
+	echo x > tmp2
+	F -s tmp1 &&
+	T -s tmp2
+	report $? "sflag"
+	rm tmp1 tmp2
+}
+
+tflag ()
+{
+	T -t 0 < /dev/tty &&
+	T -t 4 4>> /dev/tty &&
+	F -t 0 < test
+	report $? "tflag"
+}
+
+uflag ()
+{
+	touch tmp1; rm tmp1
+	touch tmp2; rm tmp2
+	touch tmp1 tmp2
+	chmod 3600 tmp1
+	chmod 4600 tmp2
+	F -u tmp1 &&
+	T -u tmp2
+	report $? "uflag"
+	rm tmp1 tmp2
+}
+
+wflag ()
+{
+	touch tmp; rm tmp
+	touch tmp
+	chmod 0 tmp
+	F -w tmp
+	r=$?
+	chmod o+w tmp
+	test $r = 0 && F -w tmp
+	r=$?
+	chmod u+w tmp
+	test $r = 0 && T -w tmp
+	report $? "wflag"
+	rm tmp
+}
+
+xflag_f ()
+{
+	touch tmp; rm tmp
+	touch tmp
+	chmod 0 tmp
+	F -x tmp
+	r=$?
+	chmod o+x tmp
+	test $r = 0 && F -x tmp
+	r=$?
+	chmod u+x tmp
+	test $r = 0 && T -x tmp
+	report $? "xflag_f"
+	chmod u+w tmp
+	rm tmp
+	T -x .
+}
+
+xflag_d ()
+{
+	T -x .
+	report $? "xflag_d"
+}
+
+zflag ()
+{
+	T -z '' &&
+	F -z .
+	report $? "zflag"
+}
+
+string ()
+{
+	touch tmp; rm tmp
+	T x &&
+	F &&
+	F '' &&
+	T -1 &&
+	T -e &&
+	T -n &&
+	T -z &&
+	$t --help > tmp && ! test -s tmp &&
+	$t --version > tmp && ! test -s tmp &&
+	$b --help \] > tmp && ! test -s tmp &&
+	$b --version \] > tmp && ! test -s tmp &&
+	! $t -- -e . 2> /dev/null
+	report $? "string"
+	rm tmp
+}
+
+eq_sign ()
+{
+	T a = a &&
+	F a = b &&
+	F 1 = 01 &&
+	T a=b
+	report $? "eq_sign"
+}
+
+ne_sign ()
+{
+	T a != b &&
+	F a != a &&
+	T 1 != 01 &&
+	T a!=a
+	report $? "ne_sign"
+}
+
+eq_flag ()
+{
+	T 1 -eq 1 &&
+	T 1 -eq 01 &&
+	F 1 -eq 0 &&
+	F a -eq a 2> /dev/null &&
+	T -1 -eq -1 &&
+	T 1 -eq +1
+	report $? "eq_flag"
+}
+
+ne_flag ()
+{
+	T 1 -ne 2 &&
+	F 1 -ne 1 &&
+	F 1 -ne 01 &&
+	F a -ne b 2> /dev/null &&
+	T -1 -ne -2
+	report $? "ne_flag"
+}
+
+gt_flag ()
+{
+	T 2 -gt 1 &&
+	T 02 -gt 1 &&
+	F 1 -gt 2 &&
+	F b -gt a 2> /dev/null &&
+	T -1 -gt -2 &&
+	F 1 -gt 1
+	report $? "gt_flag"
+}
+
+ge_flag ()
+{
+	T 2 -ge 1 &&
+	T 02 -ge 1 &&
+	F 1 -ge 2 &&
+	F b -ge a 2> /dev/null &&
+	F a -ge a 2> /dev/null &&
+	T -1 -ge -2 &&
+	T 1 -ge 1 &&
+	T 1 -ge +1
+	report $? "ge_flag"
+}
+
+lt_flag ()
+{
+	T 1 -lt 2 &&
+	T 1 -lt 02 &&
+	F 2 -lt 1 &&
+	F a -lt b 2> /dev/null &&
+	T -2 -lt -1 &&
+	F 1 -lt 1
+	report $? "lt_flag"
+}
+
+le_flag ()
+{
+	T 1 -le 2 &&
+	T 1 -le 02 &&
+	F 2 -le 1 &&
+	F a -le b 2> /dev/null &&
+	F a -le a 2> /dev/null &&
+	T -2 -le -1 &&
+	T 1 -le 1 &&
+	T +1 -le 1
+	report $? "le_flag"
+}
+
+ef_flag ()
+{
+	touch tmp; rm tmp
+	touch tmp1; rm tmp1
+	touch tmp2; rm tmp2
+	touch tmp
+	link tmp tmp1
+	touch tmp2
+	T tmp -ef tmp1 &&
+	F tmp -ef tmp2
+	r=$?
+	rm tmp1
+	ln -s tmp tmp1
+	test $r = 0 && T tmp -ef tmp1
+	report_np $? "ef_flag"
+	rm tmp tmp1 tmp2
+}
+
+nt_flag ()
+{
+	touch tmp; rm tmp
+	touch tmp
+	T tmp -nt /usr &&
+	F /usr -nt tmp
+	report_np $? "nt_flag"
+	rm tmp
+}
+
+ot_flag ()
+{
+	touch tmp; rm tmp
+	touch tmp
+	F tmp -ot /usr &&
+	T /usr -ot tmp
+	report_np $? "ot_flag"
+	rm tmp
+}
+
+aflag ()
+{
+	T a -a b &&
+	F a -a '' &&
+	F a -ab 2> /dev/null &&
+	F a -a 2> /dev/null &&
+	F -a a 2> /dev/null &&
+	T -z '' -a -n x &&
+	F -z '' -a -n '' &&
+	F -z x -a -n x &&
+	F -z x -a -n ''
+	report_np $? "aflag"
+	# Actually obsolescent.
+}
+
+oflag ()
+{
+	T a -o b &&
+	T a -o '' &&
+	F '' -o '' &&
+	F a -ob 2> /dev/null &&
+	F -o a 2> /dev/null &&
+	F a -o 2> /dev/null &&
+	T -z '' -o -n x &&
+	T -z '' -o -n '' &&
+	T -z x -o -n x &&
+	F -z x -o -n ''
+	report_np $? "oflag"
+	# Actually obsolescent.
+}
+
+excl ()
+{
+	T ! -n '' &&
+	F !-n '' 2> /dev/null
+	report $? "excl"
+}
+
+excl_prec ()
+{
+	T -z '' -a ! -n '' &&
+	T ! -n '' -a -z '' &&
+	F ! '' -a ''
+	report_np $? "excl_prec"
+}
+
+oflag_aflag ()
+{
+	T xx -o xx -a xx &&
+	T xx -o xx -a '' &&
+	T xx -o '' -a xx &&
+	T xx -o '' -a '' &&
+	T '' -o xx -a xx &&
+	F '' -o xx -a '' &&
+	F '' -o '' -a xx &&
+	F '' -o '' -a ''
+	report_np $? "oflag_aflag"
+	# Actually obsolescent.
+}
+
+parenthesis ()
+{
+	T xx -o \( xx -a xx \) &&
+	T xx -o \( xx -a '' \) &&
+	T xx -o \( '' -a xx \) &&
+	T xx -o \( '' -a '' \) &&
+	T '' -o \( xx -a xx \) &&
+	F '' -o \( xx -a '' \) &&
+	F '' -o \( '' -a xx \) &&
+	F '' -o \( '' -a '' \) &&
+	T \( xx -a xx \)
+	F \(xx = xx\)
+	report_np $? "parenthesis"
+	# Actually obsolescent.
+}
+
+multiexcl ()
+{
+	T ! ! ! "" 2> /dev/null &&
+	F ! ! "" 2> /dev/null
+	report $? "multiexcl"
+}
+
+multiexcl_many ()
+{
+	T ! ! ! ! ! "" 2> /dev/null
+	report_np $? "multiexcl_many"
+}
+
+bigint ()
+{
+	T 999999999999999999999999999999999999999999999999 -gt 1 2> /dev/null
+	report $? "bigint"
+}
+
+prec ()
+{
+	touch -- -eq; rm -- -eq
+	touch -- -eq
+	T -f -eq 2> /dev/null &&
+	T -f = -f 2> /dev/null
+	report $? "prec"
+	rm -- -eq
+}
+
+np_prec ()
+{
+	T -n -a -n 2> /dev/null
+	report_np $? "np_prec"
+}
+
+# TODO -G (NON-POSIX)
+# TODO -O (NON-POSIX)
+# TODO -S
+
+
+if test $# = 0; then
+	set bracket bflag cflag dflag eflag fflag gflag hflag_1 hflag_2 kflag Lflag_1 Lflag_2 nflag \
+	    pflag rflag sflag tflag uflag wflag xflag_f xflag_d zflag string eq_sign ne_sign eq_flag \
+	    ne_flag gt_flag ge_flag lt_flag le_flag ef_flag nt_flag ot_flag aflag oflag excl \
+	    excl_prec oflag_aflag parenthesis multiexcl multiexcl_many bigint prec np_prec
+fi
+(
+for f in $@; do
+	$f
+done
+) | tee result
+! grep FAILED < result > /dev/null
+ret=$?
+if test $ret != 0; then
+	if test $(grep FAILED < result | grep -v NON-POSIX | wc -l) = 1; then
+		ret=1
+	else
+		ret=2
+	fi
+fi
+rm result
+exit $ret
