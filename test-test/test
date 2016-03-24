@@ -570,7 +570,7 @@ done
 ! grep FAILED < result > /dev/null
 ret=$?
 if test $ret != 0; then
-	if test $(grep FAILED < result | grep -v NON-POSIX | wc -l) = 1; then
+	if test $(grep FAILED < result | grep -v NON-POSIX | wc -l) = 0; then
 		ret=1
 	else
 		ret=2
