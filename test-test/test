@@ -490,7 +490,7 @@ parenthesis ()
 	F '' -o \( xx -a '' \) &&
 	F '' -o \( '' -a xx \) &&
 	F '' -o \( '' -a '' \) &&
-	T \( xx -a xx \)
+	T \( xx -a xx \) &&
 	F \(xx = xx\)
 	report_np $? "parenthesis"
 	# Actually obsolescent.
