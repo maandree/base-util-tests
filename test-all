@@ -9,15 +9,19 @@ function all()
 	     shake256sum shake512sum cksum true false echo
 }
 
-if test -n "${IN_PATH}"; then
-	exec 99>&2
-	exec 2>/dev/null
+exec 99>&2
+exec 2>/dev/null
+if test -n "${EPATH}"; then
+	for c in $(all); do
+	    eval "export $(echo $c | tr '[a-z-]' '[A-Z_]')='$(realpath "$(env PATH="${EPATH}" "$(which which)" $c)")'"
+	done
+elif test -n "${IN_PATH}"; then
 	for c in $(all); do
 	    eval "export $(echo $c | tr '[a-z-]' '[A-Z_]')='$(realpath "$(which $c)")'"
 	done
-	exec 2>&99
-	exec 99>&-
 fi
+exec 2>&99
+exec 99>&-
 
 if test $# = 0; then
 	set $(all)
