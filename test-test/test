@@ -431,8 +431,7 @@ aflag ()
 	F -z '' -a -n '' &&
 	F -z x -a -n x &&
 	F -z x -a -n ''
-	report_np $? "aflag"
-	# Actually obsolescent.
+	report_np $? "aflag (obsolescent)"
 }
 
 oflag ()
@@ -447,8 +446,7 @@ oflag ()
 	T -z '' -o -n '' &&
 	T -z x -o -n x &&
 	F -z x -o -n ''
-	report_np $? "oflag"
-	# Actually obsolescent.
+	report_np $? "oflag (obsolescent)"
 }
 
 excl ()
@@ -463,7 +461,7 @@ excl_prec ()
 	T -z '' -a ! -n '' &&
 	T ! -n '' -a -z '' &&
 	F ! '' -a ''
-	report_np $? "excl_prec"
+	report_np $? "excl_prec (obsolescent)"
 }
 
 oflag_aflag ()
@@ -476,8 +474,7 @@ oflag_aflag ()
 	F '' -o xx -a '' &&
 	F '' -o '' -a xx &&
 	F '' -o '' -a ''
-	report_np $? "oflag_aflag"
-	# Actually obsolescent.
+	report_np $? "oflag_aflag (obsolescent)"
 }
 
 parenthesis ()
@@ -492,8 +489,7 @@ parenthesis ()
 	F '' -o \( '' -a '' \) &&
 	T \( xx -a xx \) &&
 	F \(xx = xx\)
-	report_np $? "parenthesis"
-	# Actually obsolescent.
+	report_np $? "parenthesis (obsolescent)"
 }
 
 multiexcl ()
@@ -511,7 +507,19 @@ multiexcl_many ()
 
 bigint ()
 {
-	T 999999999999999999999999999999999999999999999999 -gt 1 2> /dev/null
+	T 999999999999999999999999999999999999999999999999 -gt 1 2> /dev/null &&
+	T 11 -gt 2 &&
+	T 9 -gt 1 &&
+	T 0 -eq 0 &&
+	T -1 -eq -1 &&
+	T -1 -lt 0 &&
+	T -1 -lt 1 &&
+	T 0 -gt -1 &&
+	T 0 -eq 0 &&
+	T 0 -lt 1 &&
+	T 1 -gt -1 &&
+	T 1 -gt 0 &&
+	T 1 -eq 1
 	report $? "bigint"
 }
 
@@ -528,7 +536,7 @@ prec ()
 np_prec ()
 {
 	T -n -a -n 2> /dev/null
-	report_np $? "np_prec"
+	report_np $? "np_prec (obsolescent)"
 }
 
 Sflag ()
