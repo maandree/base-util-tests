@@ -546,9 +546,6 @@ EOF
 	rm tmp1 tmp2
 }
 
-# TODO -G (NON-POSIX)
-# TODO -O (NON-POSIX)
-
 
 if test $# = 0; then
 	set bracket bflag cflag dflag eflag fflag gflag hflag_1 hflag_2 kflag Lflag_1 Lflag_2 nflag \
