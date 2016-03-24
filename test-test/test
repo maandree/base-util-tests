@@ -531,16 +531,30 @@ np_prec ()
 	report_np $? "np_prec"
 }
 
+Sflag ()
+{
+	touch tmp1; rm tmp1
+	touch tmp2; rm tmp2
+	touch tmp2
+	python3 <<EOF
+import socket
+socket.socket(socket.AF_UNIX, socket.SOCK_STREAM).bind('tmp1')
+EOF
+	T -S tmp1 &&
+	F -S tmp2
+	report $? "Sflag"
+	rm tmp1 tmp2
+}
+
 # TODO -G (NON-POSIX)
 # TODO -O (NON-POSIX)
-# TODO -S
 
 
 if test $# = 0; then
 	set bracket bflag cflag dflag eflag fflag gflag hflag_1 hflag_2 kflag Lflag_1 Lflag_2 nflag \
 	    pflag rflag sflag tflag uflag wflag xflag_f xflag_d zflag string eq_sign ne_sign eq_flag \
 	    ne_flag gt_flag ge_flag lt_flag le_flag ef_flag nt_flag ot_flag aflag oflag excl \
-	    excl_prec oflag_aflag parenthesis multiexcl multiexcl_many bigint prec np_prec
+	    excl_prec oflag_aflag parenthesis multiexcl multiexcl_many bigint prec np_prec Sflag
 fi
 (
 for f in $@; do
