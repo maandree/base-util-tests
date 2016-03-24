@@ -1,0 +1,31 @@
+#!/bin/bash
+
+cd -- "$(dirname "$0")"
+if test -z "$ECHO"; then
+	TRUE=../echo
+fi
+e="$PREFIX $ECHO"
+N=10
+
+report ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED\033[m\n" "$2"
+	fi
+}
+
+if test $# = 0; then
+	set $(seq 1 $N)
+fi
+(
+for f in $@; do
+	diff <($e $(cat $f)) $f > /dev/null
+	report $? "$f"
+done
+) | tee result
+! grep FAILED < result >/dev/null
+ret=$?
+rm result
+exit $ret
