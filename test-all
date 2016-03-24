@@ -31,8 +31,12 @@ true > result
 
 for t in $@; do
 	printf '\033[1mTesting %s ...\033[m\n' "$t"
-	if ! ./${t}-test/test; then
+	./${t}-test/test
+	r=$?
+	if test $r -ge 2; then
 		echo $t >> result
+	elif test $r = 1; then
+		echo $t '(standards-compliant)' >> result
 	fi
 	echo
 done
