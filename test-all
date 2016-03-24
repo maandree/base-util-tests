@@ -2,30 +2,21 @@
 
 cd -- "$(dirname "$0")"
 
+function all()
+{
+	echo patch md5sum rawshake256sum rawshake512sum sha1sum sha224sum sha256sum sha3-224sum \
+	     sha3-256sum sha3-384sum sha3-512sum sha384sum sha512-224sum sha512-256sum sha512sum \
+	     shake256sum shake512sum
+}
+
 if test -n "${IN_PATH}"; then
-	export PATCH="$(which patch)"
-	export MD5SUM="$(which md5sum)"
-	export RAWSHAKE256SUM="$(which rawshake256sum)"
-	export RAWSHAKE512SUM="$(which rawshake512sum)"
-	export SHA1SUM="$(which sha1sum)"
-	export SHA224SUM="$(which sha224sum)"
-	export SHA256SUM="$(which sha256sum)"
-	export SHA3_224SUM="$(which sha3-224sum)"
-	export SHA3_256SUM="$(which sha3-256sum)"
-	export SHA3_384SUM="$(which sha3-384sum)"
-	export SHA3_512SUM="$(which sha3-512sum)"
-	export SHA384SUM="$(which sha384sum)"
-	export SHA512_224SUM="$(which sha512-224sum)"
-	export SHA512_256SUM="$(which sha512-256sum)"
-	export SHA512SUM="$(which sha512sum)"
-	export SHAKE256SUM="$(which shake256sum)"
-	export SHAKE512SUM="$(which shake512sum)"
+	for c in $(all); do
+	    eval "export $(echo $c | tr '[a-z-]' '[A-Z_]')='$(realpath "$(which $c)")'"
+	done
 fi
 
 if test $# = 0; then
-	set patch md5sum rawshake256sum rawshake512sum sha1sum sha224sum sha256sum sha3-224sum \
-	    sha3-256sum sha3-384sum sha3-512sum sha384sum sha512-224sum sha512-256sum sha512sum \
-	    shake256sum shake512sum
+	set $(all)
 fi
 
 true > result
