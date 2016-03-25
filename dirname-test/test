@@ -1,0 +1,103 @@
+#!/bin/bash
+
+cd -- "$(dirname "$0")"
+if test -z "$DIRNAME"; then
+	DIRNAME=../dirname
+fi
+d="$PREFIX $DIRNAME"
+
+report ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED\033[m\n" "$2"
+	fi
+}
+
+
+
+ddash ()
+{
+	test "$($d -- a/b)" = "a"
+	report $? "ddash"
+	# http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap12.html#tag_12_02
+}
+
+lf ()
+{
+	test "$($d test | wc -l)" = 1
+	report $? "lf"
+}
+
+step_1 ()
+{
+	test "$($d //)" = / || test "$($d //)" = //
+	report $? "step_1"
+}
+
+step_2 ()
+{
+	test "$($d /)" = / &&
+	test "$($d ///)" = /
+	report $? "step_2"
+}
+
+step_5_3 ()
+{
+	test "$($d a/b/)" = a &&
+	test "$($d a/b//)" = a
+	report $? "step_5_3"
+}
+
+step_4 ()
+{
+	test "$($d a)" = .
+	report $? "step_4"
+}
+
+step_4_3 ()
+{
+	test "$($d a/)" = .
+	report $? "step_4_3"
+}
+
+step_5 ()
+{
+	test "$($d /a/b/c)" = /a/b
+	report $? "step_5"
+}
+
+step_6 ()
+{
+	test "$($d //a)" = // || test "$($d //a)" = /
+	report $? "step_6"
+}
+
+step_5_6 ()
+{
+	test "$($d //a/b/c)" = //a/b
+	report $? "step_5_6"
+}
+
+
+
+if test $# = 0; then
+	set ddash lf step_1 step_2 step_4 step_4_3 step_5 step_5_3 step_6 step_5_6
+fi
+(
+for f in $@; do
+	$f
+done
+) | tee result
+! grep FAILED < result > /dev/null
+ret=$?
+if test $ret != 0; then
+	if test $(grep FAILED < result | grep -v NON-POSIX | wc -l) = 0; then
+		ret=1
+	else
+		ret=2
+	fi
+fi
+rm result
+exit $ret

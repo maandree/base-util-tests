@@ -1,0 +1,125 @@
+#!/bin/bash
+
+cd -- "$(dirname "$0")"
+if test -z "$BASENAME"; then
+	BASENAME=../basename
+fi
+b="$PREFIX $BASENAME"
+
+report ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED\033[m\n" "$2"
+	fi
+}
+
+
+
+ddash ()
+{
+	test "$($b -- x)" = "x"
+	report $? "ddash"
+	# http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap12.html#tag_12_02
+}
+
+lf ()
+{
+	test "$($b test | wc -l)" = 1
+	report $? "lf"
+}
+
+step_1 ()
+{
+	test "$($b '' | wc -l)" = 1 &&
+	(test "$($b '')" = '' || test "$($b '')" = .)
+	report $? "step_1"
+}
+
+step_2 ()
+{
+	test "$($b //)" = / || test "$($b //)" = //
+	report $? "step_2"
+}
+
+step_3 ()
+{
+	test "$($b //)" = / &&
+	test "$($b ///)" = /
+	report $? "step_3"
+}
+
+step_4 ()
+{
+	test "$($b x/)" = x &&
+	test "$($b x//)" = x
+	report $? "step_4"
+}
+
+step_5 ()
+{
+	test "$($b a/b/c)" = c &&
+	test "$($b /a)" = a
+	report $? "step_5"
+}
+
+step_4_5 ()
+{
+	test "$($b a/b/c/)" = c &&
+	test "$($b /a/)" = a
+	report $? "step_5"
+}
+
+step_6 ()
+{
+	test "$($b a.b b)" = a. &&
+	report $? "step_6"
+}
+
+step_6_4 ()
+{
+	test "$($b a.b/ b)" = a. &&
+	report $? "step_6.4"
+}
+
+step_6_full ()
+{
+	test "$($b a.b a.b)" = a.b &&
+	report $? "step_6_full"
+}
+
+step_6_mismatch ()
+{
+	test "$($b a.b c)" = a.b &&
+	report $? "step_6_mismatch"
+}
+
+step_6_longer ()
+{
+	test "$($b a.b cccccccccccccccccc)" = a.b &&
+	report $? "step_6_longer"
+}
+
+
+
+if test $# = 0; then
+	set ddash lf step_1 step_2 step_3 step_4 step_5 step_4_5 step_6 step_6_4 \
+	    step_6_full step_6_mismatch step_6_longer
+fi
+(
+for f in $@; do
+	$f
+done
+) | tee result
+! grep FAILED < result > /dev/null
+ret=$?
+if test $ret != 0; then
+	if test $(grep FAILED < result | grep -v NON-POSIX | wc -l) = 0; then
+		ret=1
+	else
+		ret=2
+	fi
+fi
+rm result
+exit $ret
