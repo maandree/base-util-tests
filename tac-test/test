@@ -1,0 +1,75 @@
+#!/bin/bash
+
+cd -- "$(dirname "$0")"
+if test -z "$TAC"; then
+	TAC=../tac
+fi
+N=5
+t="$PREFIX $TAC"
+
+report ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED\033[m\n" "$2"
+	fi
+}
+
+test_file ()
+{
+	diff <($t < $1.in) $1.out > /dev/null
+	report $? "file_$1"
+}
+
+
+file_1 () { test_file 1; }
+file_2 () { test_file 2; }
+file_3 () { test_file 3; }
+file_4 () { test_file 4; }
+file_5 () { test_file 5; }
+
+dash ()
+{
+	diff <($t - < 4.in) 4.out > /dev/null
+	report $? "dash"
+}
+
+file_one ()
+{
+	diff <($t 4.in) 4.out > /dev/null
+	report $? "file_one"
+}
+
+file_many ()
+{
+	diff <($t 1.in 2.in 3.in 4.in 5.in) 12345.out > /dev/null
+	report $? "file_many"
+}
+
+file_dash ()
+{
+	diff <($t 1.in 2.in 3.in 4.in - < 5.in) 12345.out > /dev/null
+	report $? "file_dash"
+}
+
+
+if test $# = 0; then
+	set $(printf 'file_%i\n' $(seq 1 $N)) dash file_one file_many file_dash
+fi
+(
+for f in $@; do
+	$f
+done
+) | tee result
+! grep FAILED < result > /dev/null
+ret=$?
+if test $ret != 0; then
+	if test $(grep FAILED < result | grep -v NON-STANDARD | wc -l) = 0; then
+		ret=1
+	else
+		ret=2
+	fi
+fi
+rm result
+exit $ret
