@@ -23,9 +23,9 @@ report ()
 report_np ()
 {
 	if test $1 = 0; then
-		printf "\033[1;32mTest %s OK (NON-POSIX)\033[m\n" "$2"
+		printf "\033[1;32mTest %s OK (NON-STANDARD)\033[m\n" "$2"
 	else
-		printf "\033[1;31mTest %s FAILED (NON-POSIX)\033[m\n" "$2"
+		printf "\033[1;31mTest %s FAILED (NON-STANDARD)\033[m\n" "$2"
 	fi
 }
 
@@ -570,7 +570,7 @@ done
 ! grep FAILED < result > /dev/null
 ret=$?
 if test $ret != 0; then
-	if test $(grep FAILED < result | grep -v NON-POSIX | wc -l) = 0; then
+	if test $(grep FAILED < result | grep -v NON-STANDARD | wc -l) = 0; then
 		ret=1
 	else
 		ret=2

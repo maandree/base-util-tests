@@ -113,7 +113,7 @@ for i in $@; do
 		if test -z $NPE; then
 			run patch-e $i
 		else
-			run patch-e $i " (NON-POSIX)"
+			run patch-e $i " (NON-STANDARD)"
 		fi
 	fi
 	cd ..
