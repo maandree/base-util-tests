@@ -1,0 +1,98 @@
+#!/bin/bash
+
+cd -- "$(dirname "$0")"
+if test -z "$CAT"; then
+	CAT=../cat
+fi
+N=5
+c="$PREFIX $CAT"
+
+report ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED\033[m\n" "$2"
+	fi
+}
+
+test_file ()
+{
+	diff <($c < $1) $1 > /dev/null
+	report $? "file_$1"
+}
+
+
+file_1 () { test_file 1; }
+file_2 () { test_file 2; }
+file_3 () { test_file 3; }
+file_4 () { test_file 4; }
+file_5 () { test_file 5; }
+
+dash ()
+{
+	diff <($c - < 4) 4 > /dev/null
+	report $? "dash"
+}
+
+dash_many ()
+{
+	diff <($c - - - - < 4) 4 > /dev/null
+	report $? "dash_many"
+}
+
+file_one ()
+{
+	diff <($c 4) 4 > /dev/null
+	report $? "file_one"
+}
+
+file_many ()
+{
+	diff <($c 1 2 3 4 5) 12345 > /dev/null
+	report $? "file_many"
+}
+
+file_dash ()
+{
+	diff <($c 1 2 3 4 - < 5) 12345 > /dev/null
+	report $? "file_dash"
+}
+
+uflag ()
+{
+	touch tmp; rm tmp
+	touch tmp1; rm tmp1
+	touch tmp2; rm tmp2
+	(
+	    printf 123
+	    sleep 0.1
+	    cat tmp > tmp1
+	) | $c -u > tmp
+	printf 123 > tmp2
+	diff tmp tmp1 > /dev/null &&
+	diff tmp tmp2 > /dev/null
+	report $? "uflag"
+	rm tmp tmp1 tmp2
+}
+
+
+if test $# = 0; then
+	set $(printf 'file_%i\n' $(seq 1 $N)) dash dash_many file_one file_many file_dash uflag
+fi
+(
+for f in $@; do
+	$f
+done
+) | tee result
+! grep FAILED < result > /dev/null
+ret=$?
+if test $ret != 0; then
+	if test $(grep FAILED < result | grep -v NON-POSIX | wc -l) = 0; then
+		ret=1
+	else
+		ret=2
+	fi
+fi
+rm result
+exit $ret

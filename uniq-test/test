@@ -111,6 +111,9 @@ file_out ()
 {
 	$u - tmp < 5.in && diff tmp 5.out > /dev/null
 	report $? "file_out"
+	if test -f tmp; then
+		rm tmp
+	fi
 }
 
 dash_out ()
