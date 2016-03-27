@@ -59,6 +59,12 @@ file_dash ()
 	report $? "file_dash"
 }
 
+ddash ()
+{
+	diff <($c -- 4) 4 > /dev/null
+	report $? "ddash"
+}
+
 uflag ()
 {
 	touch tmp; rm tmp
@@ -78,7 +84,7 @@ uflag ()
 
 
 if test $# = 0; then
-	set $(printf 'file_%i\n' $(seq 1 $N)) dash dash_many file_one file_many file_dash uflag
+	set $(printf 'file_%i\n' $(seq 1 $N)) dash dash_many file_one file_many file_dash ddash uflag
 fi
 (
 for f in $@; do

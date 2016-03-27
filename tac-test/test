@@ -53,9 +53,15 @@ file_dash ()
 	report $? "file_dash"
 }
 
+ddash ()
+{
+	diff <($t -- 4.in) 4.out > /dev/null
+	report $? "ddash"
+}
+
 
 if test $# = 0; then
-	set $(printf 'file_%i\n' $(seq 1 $N)) dash file_one file_many file_dash
+	set $(printf 'file_%i\n' $(seq 1 $N)) dash file_one file_many file_dash ddash
 fi
 (
 for f in $@; do

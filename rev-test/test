@@ -1,0 +1,109 @@
+#!/bin/bash
+
+cd -- "$(dirname "$0")"
+if test -z "$REV"; then
+	REV=../rev
+fi
+N=5
+r="$PREFIX $REV"
+
+report ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED\033[m\n" "$2"
+	fi
+}
+
+report_np ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK (NON-STANDARD)\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED (NON-STANDARD)\033[m\n" "$2"
+	fi
+}
+
+test_file ()
+{
+	diff <($r < $1.in) $1.out > /dev/null
+	report $? "file_$1"
+}
+
+
+file_1 () { test_file 1; }
+file_2 () { test_file 2; }
+file_3 () { test_file 3; }
+file_4 () { test_file 4; }
+file_5 () { test_file 5; }
+
+nolf ()
+{
+	diff <($r < nolf.in) nolf.out > /dev/null
+	report_np $? "nolf"
+}
+
+utf8 ()
+{
+	diff <($r < utf8.in) utf8.out > /dev/null
+	report $? "utf8"
+}
+
+dash ()
+{
+	diff <($r - < 4.in) 4.out > /dev/null
+	report $? "dash"
+}
+
+file_one ()
+{
+	diff <($r 4.in) 4.out > /dev/null
+	report $? "file_one"
+}
+
+file_many ()
+{
+	diff <($r 1.in 2.in 3.in 4.in 5.in) 12345.out > /dev/null
+	report $? "file_many"
+}
+
+file_dash ()
+{
+	diff <($r 1.in 2.in 3.in 4.in - < 5.in) 12345.out > /dev/null
+	report $? "file_dash"
+}
+
+ddash ()
+{
+	diff <($r -- 4.in) 4.out > /dev/null
+	report $? "ddash"
+}
+
+combining ()
+{
+	diff <($r < comb.in) comb.out > /dev/null
+	report_np $? "combining"
+	# How would you define “character”?
+}
+
+
+if test $# = 0; then
+	set $(printf 'file_%i\n' $(seq 1 $N)) dash nolf utf8 file_one file_many file_dash ddash combining
+fi
+(
+for f in $@; do
+	$f
+done
+) | tee result
+! grep FAILED < result > /dev/null
+ret=$?
+if test $ret != 0; then
+	if test $(grep FAILED < result | grep -v NON-STANDARD | wc -l) = 0; then
+		ret=1
+	else
+		ret=2
+	fi
+fi
+rm result
+exit $ret
