@@ -1,0 +1,119 @@
+#!/bin/bash
+
+cd -- "$(dirname "$0")"
+if test -z "$YES"; then
+	YES=../yes
+fi
+y="$PREFIX $YES"
+
+report ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED\033[m\n" "$2"
+	fi
+}
+
+report_np ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK (NON-STANDARD)\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED (NON-STANDARD)\033[m\n" "$2"
+	fi
+}
+
+
+
+args0 ()
+{
+	cat > tmp <<EOF
+y
+y
+y
+y
+y
+EOF
+	diff <($y | head -n 5) tmp > /dev/null
+	report $? "args0"
+	rm tmp
+}
+
+args1 ()
+{
+	cat > tmp <<EOF
+a
+a
+a
+a
+a
+EOF
+	diff <($y a | head -n 5) tmp > /dev/null
+	report $? "args1"
+	rm tmp
+}
+
+args2 ()
+{
+	cat > tmp <<EOF
+a b
+a b
+a b
+a b
+a b
+EOF
+	diff <($y a b | head -n 5) tmp > /dev/null
+	report_np $? "args2"
+	rm tmp
+}
+
+args3 ()
+{
+	cat > tmp <<EOF
+a b c
+a b c
+a b c
+a b c
+a b c
+EOF
+	diff <($y a b c | head -n 5) tmp > /dev/null
+	report_np $? "args3"
+	rm tmp
+}
+
+ddash ()
+{
+	cat > tmp <<EOF
+a
+a
+a
+a
+a
+EOF
+	diff <($y -- a | head -n 5) tmp > /dev/null
+	report_np $? "ddash"
+	rm tmp
+}
+
+
+
+if test $# = 0; then
+	set args0 args1 args2 args3 ddash
+fi
+(
+for f in $@; do
+	$f
+done
+) | tee result
+! grep FAILED < result > /dev/null
+ret=$?
+if test $ret != 0; then
+	if test $(grep FAILED < result | grep -v NON-STANDARD | wc -l) = 0; then
+		ret=1
+	else
+		ret=2
+	fi
+fi
+rm result
+exit $ret
