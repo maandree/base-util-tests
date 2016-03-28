@@ -395,10 +395,10 @@ oflagless ()
 	cd tmp
 	printf '%s\n' 1 2 3 4 5 > old
 	printf '%s\n' 1 2 3 x 4 5 > new
-	diff old new > patch-u
-	$p old < patch-u
+	diff old new > patch
+	$p old < patch
 	diff old new > /dev/null
-	report $? "oflagless -u"
+	report $? "oflagless"
 	cd ..
 	rm -r tmp
 }
