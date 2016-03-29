@@ -117,7 +117,7 @@ w0flag ()
 
 lcase ()
 {
-	test "$(printf abcdef | $b -d)" = "$(printf ABCDEF | $b -d)"
+	test "$(printf abcdef | $b -d 2> /dev/null)" = "$(printf ABCDEF | $b -d)"
 	report_np $? "lcase -d"
 }
 
