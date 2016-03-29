@@ -1,0 +1,97 @@
+#!/bin/bash
+
+cd -- "$(dirname "$0")"
+if test -z "$PRINTENV"; then
+	PRINTENV=../printenv
+fi
+p="$PREFIX $PRINTENV"
+
+report ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED\033[m\n" "$2"
+	fi
+}
+
+report_np ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK (NON-STANDARD)\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED (NON-STANDARD)\033[m\n" "$2"
+	fi
+}
+
+
+all ()
+{
+	diff <(env -u _ $p) <(env -u _ env) > /dev/null
+	report $? "all"
+}
+
+one ()
+{
+	test "$(env ABC=xyz $p ABC)" = xyz
+	report $? "one"
+}
+
+two ()
+{
+	test "$(env ABC=xyz 123=abc $p ABC 123)" = $'xyz\nabc'
+	report $? "two"
+}
+
+purged ()
+{
+	test -z "$(env -i $p)"
+	report $? "purged"
+}
+
+nonexistent ()
+{
+	env -i $p ABC > tmp
+	test $? = 1 && ! test -s tmp
+	report $? "nonexistent"
+	rm tmp
+}
+
+failure ()
+{
+	$p >&- 2>/dev/null
+	test $? = 2
+	report_np $? "failure"
+}
+
+ddash ()
+{
+	test "$(env ABC=xyz $p -- ABC)" = xyz
+	report $? "ddash"
+}
+
+# Do not test e.g. `env A=B=C $p A=B`, failure of such test
+# would most likely indicate that getenv(3) does not verify that
+# the variable name does not contain a '='. Calling printenv with
+# a '=' would also be user error.
+
+
+if test $# = 0; then
+	set all one two purged nonexistent failure ddash
+fi
+(
+for f in $@; do
+	$f
+done
+) | tee result
+! grep FAILED < result > /dev/null
+ret=$?
+if test $ret != 0; then
+	if test $(grep FAILED < result | grep -v NON-STANDARD | wc -l) = 0; then
+		ret=1
+	else
+		ret=2
+	fi
+fi
+rm result
+exit $ret
