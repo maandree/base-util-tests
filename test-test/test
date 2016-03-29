@@ -555,11 +555,34 @@ EOF
 	rm tmp1 tmp2
 }
 
+Eflag ()
+{
+	touch tmp1; rm tmp1
+	touch tmp2; rm tmp2
+	touch tmp3; rm tmp3
+	touch tmp2l; rm tmp2l
+	touch tmp3l; rm tmp3l
+	touch tmp1
+	mkdir tmp2
+	mkdir tmp3
+	touch tmp3/x
+	ln -s tmp2 tmp2l
+	ln -s tmp3 tmp3l
+	F -E tmp1 &&
+	T -E tmp2 &&
+	F -E tmp3 &&
+	T -E tmp2l &&
+	F -E tmp3l
+	report_np $? "Eflag"
+	rm tmp1 tmp2l tmp3l tmp3/x
+	rmdir tmp2 tmp3
+}
+
 
 if test $# = 0; then
 	set bracket bflag cflag dflag eflag fflag gflag hflag_1 hflag_2 kflag Lflag_1 Lflag_2 nflag \
 	    pflag rflag sflag tflag uflag wflag xflag_f xflag_d zflag string eq_sign ne_sign eq_flag \
-	    ne_flag gt_flag ge_flag lt_flag le_flag ef_flag nt_flag ot_flag aflag oflag excl \
+	    ne_flag gt_flag ge_flag lt_flag le_flag ef_flag nt_flag ot_flag aflag oflag excl Eflag \
 	    excl_prec oflag_aflag parenthesis multiexcl multiexcl_many bigint prec np_prec Sflag
 fi
 (
