@@ -1,0 +1,49 @@
+Correctness tests for the base utilities.
+
+
+To test your system run
+
+	env IN_PATH=x ./test-all [<utils>...]
+
+To test your implementations run
+
+	env EPATH=<path> ./test-all [<utils>...]
+
+you also copy all files into <path> and just run
+
+	./test [<utils>...]
+
+To run the utilities under valgrind run
+
+	env PREFIX=valgrind ./test-all [<utils>...]
+
+You can also run indiviual tests:
+
+	env [PREFIX=valgrind] [<UTIL>=<pathname>] ./<util>-test/test [<tests>...]
+
+(<UTIL> is uppercase of <util> with _ instead of - (that is, `tr [a-z-] [A-Z_]`))
+
+here, <pathname> usually require the prefix ../ unless it is
+an absolute path, but sometimes the prefix ../../ is required.
+Relative paths are always relative to ./<util>-test/, or
+subdirectory of ./<util>-test/, not to the current working
+directory.
+
+The exit status for ./<util>-test/test are:
+
+	0:  All tests passed.
+	1:  The implemention is standards-compliant (as far as
+            the test can tell), but at least one test failed.
+	2:  The implemention is not standards-compliant.
+
+
+NOTES FOR PATCH-TEST
+
+	The test for patch(1) requires that the -f flag is
+	implemented and it is used to prevent patch(1) from
+	asking the user questions. If the -f flag is not
+	available or does something else, set FORCE_PATCH
+	to the path and flags for patch(1) that runs patch(1)
+	qwithout asking questions. If the path is relative,
+	it is relative to a direct subdiretory of ./patch-test/
+	(../../ prefix.)
