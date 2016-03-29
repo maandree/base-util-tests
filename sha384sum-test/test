@@ -3,4 +3,4 @@
 export tool="$SHA384SUM"
 export algo=sha384
 
-exec "$(dirname "$0")/../__sum/__test" "$@"
+exec "$(dirname "$0")/../__xsum/__test" "$@"

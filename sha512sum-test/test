@@ -3,4 +3,4 @@
 export tool="$SHA512SUM"
 export algo=sha512
 
-exec "$(dirname "$0")/../__sum/__test" "$@"
+exec "$(dirname "$0")/../__xsum/__test" "$@"

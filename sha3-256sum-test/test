@@ -3,4 +3,4 @@
 export tool="${SHA3_256SUM}"
 export algo=sha3-256
 
-exec "$(dirname "$0")/../__sum/__test" "$@"
+exec "$(dirname "$0")/../__xsum/__test" "$@"

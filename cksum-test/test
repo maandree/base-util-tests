@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd -- "$(dirname "$0")/../__sum"
+cd -- "$(dirname "$0")/../__xsum"
 N=14
 algo=ck
 if test -z "$CKSUM"; then
