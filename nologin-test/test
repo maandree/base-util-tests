@@ -1,0 +1,57 @@
+#!/bin/bash
+
+cd -- "$(dirname "$0")"
+if test -z "$NOLOGIN"; then
+	NOLOGIN=../nologin
+fi
+n="$PREFIX $NOLOGIN"
+
+report ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED\033[m\n" "$2"
+	fi
+}
+
+
+
+exitvalue ()
+{
+	! $n > /dev/null
+	report $? "exitvalue"
+}
+
+message ()
+{
+	if test -f /etc/nologin.txt; then
+		diff <($n) /etc/nologin.txt > /dev/null
+		report $? "message (with /etc/nologin.txt)"
+	else
+		test "$($n)" != ""
+		report $? "message (without /etc/nologin.txt)"
+	fi
+}
+
+
+
+if test $# = 0; then
+	set exitvalue message
+fi
+(
+for f in $@; do
+	$f
+done
+) | tee result
+! grep FAILED < result > /dev/null
+ret=$?
+if test $ret != 0; then
+	if test $(grep FAILED < result | grep -v NON-STANDARD | wc -l) = 0; then
+		ret=1
+	else
+		ret=2
+	fi
+fi
+rm result
+exit $ret
