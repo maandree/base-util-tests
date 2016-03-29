@@ -1,0 +1,135 @@
+#!/bin/bash
+
+cd -- "$(dirname "$0")"
+if test -z "$BASE64"; then
+	BASE64=../base64
+fi
+b="$PREFIX $BASE64"
+
+f="Zg=="
+fo="Zm8="
+foo="Zm9v"
+foob="Zm9vYg=="
+fooba="Zm9vYmE="
+foobar="Zm9vYmFy"
+
+report ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED\033[m\n" "$2"
+	fi
+}
+
+report_np ()
+{
+	if test $1 = 0; then
+		printf "\033[1;32mTest %s OK (NON-STANDARD)\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s FAILED (NON-STANDARD)\033[m\n" "$2"
+	fi
+}
+
+test_string ()
+{
+	test "$(printf "%s" "$1" | $b)" = "$2"
+	report $? "$1"
+	test "$(printf "%s" "$2" | $b -d)" = "$1"
+	report $? "$1 -d"
+}
+
+
+
+empty ()
+{
+	test "$(printf "%s" "" | $b)" = ""
+	report $? "empty"
+	test "$(printf "%s" "" | $b -d)" = ""
+	report $? "empty -d"
+}
+
+f () { test_string "f" "$f"; }
+fo () { test_string "fo" "$fo"; }
+foo () { test_string "foo" "$foo"; }
+foob () { test_string "foob" "$foob"; }
+fooba () { test_string "fooba" "$fooba"; }
+foobar () { test_string "foobar" "$foobar"; }
+
+massive ()
+{
+	diff <(seq 10000 | $b | tr -d $'\n') <(tr -d $'\n' < massive) > /dev/null
+	report $? "massive"
+	diff <($b -d < massive) <(seq 10000) > /dev/null
+	report $? "massive -d"
+}
+
+file ()
+{
+	test $($b <(printf "foo")) = "$foo"
+	report $? "file"
+	test $($b -d <(printf "$foo")) = "foo"
+	report $? "file -d"
+}
+
+dash ()
+{
+	test $(printf "foo" | $b -) = "$foo"
+	report $? "dash"
+	test $(printf "$foo" | $b -d -) = "foo"
+	report $? "dash -d"
+}
+
+ddash ()
+{
+	test $(printf "foo" | $b --) = "$foo"
+	report $? "ddash"
+	test $(printf "$foo" | $b -d --) = "foo"
+	report $? "ddash -d"
+}
+
+iflag ()
+{
+	test $(printf "$foo" | sed 's/./\%&/g' | $b -di) = "foo"
+	report_np $? "iflag -d"
+}
+
+iflagless ()
+{
+	! printf "$foo" | sed 's/./\%&/g' | $b -d >/dev/null 2>/dev/null
+	report_np $? "iflagless -d"
+}
+
+wflag ()
+{
+	diff <(seq 10000 | $b -w10) <(tr -d $'\n' < massive | sed 's/........../&\n/g' ; echo) > /dev/null
+	report_np $? "wflag"
+}
+
+w0flag ()
+{
+	diff <(seq 10000 | $b -w0) <(tr -d $'\n' < massive ; echo) > /dev/null ||
+	diff <(seq 10000 | $b -w0) <(tr -d $'\n' < massive) > /dev/null
+	report_np $? "w0flag"
+}
+
+
+if test $# = 0; then
+	set empty f fo foo foob fooba foobar massive file dash ddash iflag iflagless wflag w0flag
+fi
+(
+for F in $@; do
+	$F
+done
+) | tee result
+! grep FAILED < result > /dev/null
+ret=$?
+if test $ret != 0; then
+	if test $(grep FAILED < result | grep -v NON-STANDARD | wc -l) = 0; then
+		ret=1
+	else
+		ret=2
+	fi
+fi
+rm result
+exit $ret
