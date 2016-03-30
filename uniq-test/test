@@ -128,7 +128,7 @@ dash_out ()
 
 
 if test $# = 0; then
-	set $(printf 'file_%i\n' $(seq 1 $N)) dflag uflag cflag sflag_excess \
+	set $(printf 'file_%i\n' $(seq $N)) dflag uflag cflag sflag_excess \
 	    sflag f0flag fflag_excess fflag fsflag file_in dash_in file_out \
 	    dash_out
 fi

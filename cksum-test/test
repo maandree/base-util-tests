@@ -19,7 +19,7 @@ report ()
 
 multiple_files_order ()
 {
-	$s $(seq 1 $N) | sed -e 's/[\t ]\+/ /g' | cut -d ' ' -f 3 > tmp1
+	$s $(seq $N) | sed -e 's/[\t ]\+/ /g' | cut -d ' ' -f 3 > tmp1
 	< $algo cut -d ' ' -f 3 > tmp2
 	diff tmp1 tmp2 > /dev/null
 	report $? "multiple_files_order"
@@ -28,7 +28,7 @@ multiple_files_order ()
 
 multiple_files_sum ()
 {
-	$s $(seq 1 $N) | sed -e 's/[\t ]\+/ /g' | cut -d ' ' -f 1,2 | sort > tmp1
+	$s $(seq $N) | sed -e 's/[\t ]\+/ /g' | cut -d ' ' -f 1,2 | sort > tmp1
 	< $algo cut -d ' ' -f 1,2 | sort > tmp2
 	diff tmp1 tmp2 > /dev/null
 	report $? "multiple_files_sum"
@@ -37,7 +37,7 @@ multiple_files_sum ()
 
 multiple_files ()
 {
-	$s $(seq 1 $N) > tmp1
+	$s $(seq $N) > tmp1
 	diff tmp1 $algo > /dev/null
 	report $? "multiple_files"
 	rm tmp1

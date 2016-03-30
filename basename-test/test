@@ -73,31 +73,31 @@ step_4_5 ()
 
 step_6 ()
 {
-	test "$($b a.b b)" = a. &&
+	test "$($b a.b b)" = a.
 	report $? "step_6"
 }
 
 step_6_4 ()
 {
-	test "$($b a.b/ b)" = a. &&
+	test "$($b a.b/ b)" = a.
 	report $? "step_6.4"
 }
 
 step_6_full ()
 {
-	test "$($b a.b a.b)" = a.b &&
+	test "$($b a.b a.b)" = a.b
 	report $? "step_6_full"
 }
 
 step_6_mismatch ()
 {
-	test "$($b a.b c)" = a.b &&
+	test "$($b a.b c)" = a.b
 	report $? "step_6_mismatch"
 }
 
 step_6_longer ()
 {
-	test "$($b a.b cccccccccccccccccc)" = a.b &&
+	test "$($b a.b cccccccccccccccccc)" = a.b
 	report $? "step_6_longer"
 }
 

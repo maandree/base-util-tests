@@ -89,7 +89,7 @@ combining ()
 
 
 if test $# = 0; then
-	set $(printf 'file_%i\n' $(seq 1 $N)) dash nolf utf8 file_one file_many file_dash ddash combining
+	set $(printf 'file_%i\n' $(seq $N)) dash nolf utf8 file_one file_many file_dash ddash combining
 fi
 (
 for f in $@; do

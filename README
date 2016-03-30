@@ -46,4 +46,5 @@ NOTES FOR PATCH-TEST
 	to the path and flags for patch(1) that runs patch(1)
 	qwithout asking questions. If the path is relative,
 	it is relative to a direct subdiretory of ./patch-test/
-	(../../ prefix.)
+	(../../ prefix.) You may also have to change some
+	strings in ./patct-test/__test.

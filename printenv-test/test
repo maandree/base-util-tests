@@ -60,7 +60,7 @@ nonexistent ()
 failure ()
 {
 	$p >&- 2>/dev/null
-	test $? = 2
+	test $? -ge 2
 	report_np $? "failure"
 }
 

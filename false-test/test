@@ -15,53 +15,65 @@ report ()
 	fi
 }
 
+F ()
+{
+	touch tmp1 tmp2; rm tmp1 tmp2
+	! $t "$@" 2> tmp1 >&2
+	ret=$?
+	< tmp1 tee /dev/stderr | grep -v '^==[0-9]*==' > tmp2
+	test $ret = 0 && test ! -s tmp2
+	ret=$?
+	rm tmp1 tmp2
+	return $ret
+}
+
 
 
 args0 ()
 {
-	! $t
+	F
 	report $? "args0"
 }
 
 args1 ()
 {
-	! $t 1
+	F 1
 	report $? "args1"
 }
 
 args2 ()
 {
-	! $t 1 2
+	F 1 2
 	report $? "args2"
 }
 
 args3 ()
 {
-	! $t 1 2 3
+	F 1 2 3
 	report $? "args3"
 }
 
 dash ()
 {
-	! $t -
+	F -
 	report $? "dash"
 }
 
 opt ()
 {
-	! $t -h
+	F -h
 	report $? "opt"
 }
 
 ddash ()
 {
-	! $t --
+	F --
 	report $? "ddash"
 }
 
 long ()
 {
-	! $t --hello
+	F --hello
 	report $? "long"
 }
 

@@ -61,7 +61,7 @@ ddash ()
 
 
 if test $# = 0; then
-	set $(printf 'file_%i\n' $(seq 1 $N)) dash file_one file_many file_dash ddash
+	set $(printf 'file_%i\n' $(seq $N)) dash file_one file_many file_dash ddash
 fi
 (
 for f in $@; do

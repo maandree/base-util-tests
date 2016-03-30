@@ -72,7 +72,10 @@ uflag ()
 	touch tmp2; rm tmp2
 	(
 	    printf 123
-	    sleep 0.1
+	    python3 <<EOF
+import time
+time.sleep(0.1)
+EOF
 	    cat tmp > tmp1
 	) | $c -u > tmp
 	printf 123 > tmp2
@@ -84,7 +87,7 @@ uflag ()
 
 
 if test $# = 0; then
-	set $(printf 'file_%i\n' $(seq 1 $N)) dash dash_many file_one file_many file_dash ddash uflag
+	set $(printf 'file_%i\n' $(seq $N)) dash dash_many file_one file_many file_dash ddash uflag
 fi
 (
 for f in $@; do

@@ -98,7 +98,7 @@ iflag ()
 
 iflagless ()
 {
-	! printf "$foo" | sed 's/./\%&/g' | $b -d >/dev/null 2>/dev/null
+	! printf "$foo" | sed 's/./\%&/g' | $b -d > /dev/null 2> /dev/null
 	report_np $? "iflagless -d"
 }
 

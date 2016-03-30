@@ -18,8 +18,8 @@ report ()
 
 multiple_files_order ()
 {
-	$s $(seq 1 $N) | tr '[A-F]' '[a-f]' | sed -e 's/[\t ]*/ /' | cut -d ' ' -f 2 > tmp1
-	< $algo sed -e 's/ */ /' | cut -d ' ' -f 2 > tmp2
+	$s $(seq $N) | tr '[A-F]' '[a-f]' | sed 's/[\t ]*/ /' | cut -d ' ' -f 2 > tmp1
+	< $algo sed 's/ */ /' | cut -d ' ' -f 2 > tmp2
 	diff tmp1 tmp2 > /dev/null
 	report $? "multiple_files_order"
 	rm tmp1 tmp2
@@ -27,8 +27,8 @@ multiple_files_order ()
 
 multiple_files_delim ()
 {
-	$s $(seq 1 $N) | tr '[A-F]' '[a-f]' | sed -e 's/^[0-9a-f]*//' | sort > tmp1
-	seq 1 $N | sed -e 's/^/  /' | sort > tmp2
+	$s $(seq $N) | tr '[A-F]' '[a-f]' | sed 's/^[0-9a-f]*//' | sort > tmp1
+	seq $N | sed 's/^/  /' | sort > tmp2
 	diff tmp1 tmp2 > /dev/null
 	report $? "multiple_files_delim"
 	rm tmp1 tmp2
@@ -36,7 +36,7 @@ multiple_files_delim ()
 
 multiple_files_sum ()
 {
-	$s $(seq 1 $N) | tr '[A-F]' '[a-f]' | sed -e 's/\t/ /' | cut -d ' ' -f 1 | sort > tmp1
+	$s $(seq $N) | tr '[A-F]' '[a-f]' | sed 's/\t/ /' | cut -d ' ' -f 1 | sort > tmp1
 	< $algo cut -d ' ' -f 1 | sort > tmp2
 	diff tmp1 tmp2 > /dev/null
 	report $? "multiple_files_sum"
@@ -45,7 +45,7 @@ multiple_files_sum ()
 
 multiple_files ()
 {
-	$s $(seq 1 $N) | tr '[A-F]' '[a-f]' > tmp1
+	$s $(seq $N) | tr '[A-F]' '[a-f]' > tmp1
 	diff tmp1 $algo > /dev/null
 	report $? "multiple_files"
 	rm tmp1
@@ -80,7 +80,7 @@ dash ()
 
 check_file_match ()
 {
-	$s $(seq 1 $N) > tmp1
+	$s $(seq $N) > tmp1
 	$s -c tmp1 > /dev/null
 	report $? "check_file_match"
 	rm tmp1
@@ -88,7 +88,7 @@ check_file_match ()
 
 check_stdin_match ()
 {
-	$s $(seq 1 $N) > tmp1
+	$s $(seq $N) > tmp1
 	$s -c < tmp1 > /dev/null
 	report $? "check_stdin_match"
 	rm tmp1
@@ -96,7 +96,7 @@ check_stdin_match ()
 
 check_dash_match ()
 {
-	$s $(seq 1 $N) > tmp1
+	$s $(seq $N) > tmp1
 	$s -c - < tmp1 > /dev/null
 	report $? "check_dash_match"
 	rm tmp1
@@ -104,7 +104,7 @@ check_dash_match ()
 
 check_file_mismatch ()
 {
-	$s $(seq 1 $N) | tr '[a-f]' '[1-6]' | tr '[A-F]' '[1-6]' > tmp1
+	$s $(seq $N) | tr '[a-f]' '[1-6]' | tr '[A-F]' '[1-6]' > tmp1
 	! $s -c tmp1 > /dev/null 2> /dev/null
 	report $? "check_file_mismatch"
 	rm tmp1
@@ -112,7 +112,7 @@ check_file_mismatch ()
 
 check_stdin_mismatch ()
 {
-	$s $(seq 1 $N) | tr '[a-f]' '[1-6]' | tr '[A-F]' '[1-6]' > tmp1
+	$s $(seq $N) | tr '[a-f]' '[1-6]' | tr '[A-F]' '[1-6]' > tmp1
 	! $s -c < tmp1 > /dev/null 2> /dev/null
 	report $? "check_stdin_mismatch"
 	rm tmp1
@@ -120,7 +120,7 @@ check_stdin_mismatch ()
 
 check_dash_mismatch ()
 {
-	$s $(seq 1 $N) | tr '[a-f]' '[1-6]' | tr '[A-F]' '[1-6]' > tmp1
+	$s $(seq $N) | tr '[a-f]' '[1-6]' | tr '[A-F]' '[1-6]' > tmp1
 	! $s -c - < tmp1 > /dev/null 2> /dev/null
 	report $? "check_dash_mismatch"
 	rm tmp1
@@ -128,7 +128,7 @@ check_dash_mismatch ()
 
 check_case ()
 {
-	$s $(seq 1 $N) | tr '[A-F]' '[a-f]' > tmp1
+	$s $(seq $N) | tr '[A-F]' '[a-f]' > tmp1
 	tr '[a-f]' '[A-F]' < tmp1 > tmp2
 	$s -c tmp1 > /dev/null && $s -c tmp2 > /dev/null
 	report $? "check_case"

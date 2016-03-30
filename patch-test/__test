@@ -80,10 +80,12 @@ run ()
 		fi
 		val=$?
 		if test $val = $x && test $2 = fuzzy; then
-			grep 'ward fuzz' < tmp >/dev/null
+			grep -i 'ward fuzz' < tmp > /dev/null ||
+			grep -i 'hunk #1 succeeded .*offset' < tmp > /dev/null
 			val=$?
 		elif test $val = $x && test $2 = applied; then
-			grep 'hunk number 2 of 2' < tmp >/dev/null
+			grep -i 'hunk number 2 of 2' < tmp > /dev/null ||
+			grep -i 'hunk #2 failed' < tmp > /dev/null
 			val=$?
 		fi
 

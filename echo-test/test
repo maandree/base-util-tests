@@ -17,7 +17,7 @@ report ()
 }
 
 if test $# = 0; then
-	set $(seq 1 $N)
+	set $(seq $N)
 fi
 (
 for f in $@; do
