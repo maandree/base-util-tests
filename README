@@ -9,6 +9,11 @@ To test your implementations run
 
 	env EPATH=<path> ./test-all [<utils>...]
 
+If you have exec-as installed, and what to test
+multi-call binary, run
+
+	env EXECBOX=<binary> ./test-all [<utils>...]
+
 you also copy all files into <path> and just run
 
 	./test [<utils>...]

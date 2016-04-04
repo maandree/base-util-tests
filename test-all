@@ -16,6 +16,10 @@ if test -n "${EPATH}"; then
 	for c in $(all); do
 	    eval "export $(echo $c | tr '[a-z-]' '[A-Z_]')='$(realpath "$(env PATH="${EPATH}" "$(which which)" $c)")'"
 	done
+elif test -n "${EXECBOX}"; then
+	for c in $(all); do
+	    eval "export $(echo $c | tr '[a-z-]' '[A-Z_]')='exec-as $(realpath "${EXECBOX}") $c'"
+	done
 elif test -n "${IN_PATH}"; then
 	for c in $(all); do
 	    eval "export $(echo $c | tr '[a-z-]' '[A-Z_]')='$(realpath "$(which $c)")'"
