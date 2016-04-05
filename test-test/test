@@ -29,6 +29,20 @@ report_np ()
 	fi
 }
 
+report_harm ()
+{
+	if test $1 = 0; then
+		printf "\033[1;33mTest %s (obsolescent, harmful) OK (NON-STANDARD)\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s (obsolescent, harmful) FAILED (NON-STANDARD)\033[m\n" "$2"
+	fi
+}
+
+harmless ()
+{
+	printf "\033[1;32mTest %s (obsolescent, harmful) NOT SUPPORTED (NON-STANDARD)\033[m\n" "$1"
+}
+
 T ()
 {
     $t "$@" && $b "$@" \]
@@ -423,31 +437,41 @@ ot_flag ()
 
 aflag ()
 {
-	T a -a b &&
-	F a -a '' &&
-	F a -ab 2> /dev/null &&
-	F a -a 2> /dev/null &&
-	F -a a 2> /dev/null &&
-	T -z '' -a -n x &&
-	F -z '' -a -n '' &&
-	F -z x -a -n x &&
-	F -z x -a -n ''
-	report_np $? "aflag (obsolescent)"
+	$t '' -a '' 2> /dev/null
+	if test $? -ge 2; then
+		harmless "aflag"
+	else
+		T a -a b &&
+		F a -a '' &&
+		F a -ab 2> /dev/null &&
+		F a -a 2> /dev/null &&
+		F -a a 2> /dev/null &&
+		T -z '' -a -n x &&
+		F -z '' -a -n '' &&
+		F -z x -a -n x &&
+		F -z x -a -n ''
+		report_harm $? "aflag"
+	fi
 }
 
 oflag ()
 {
-	T a -o b &&
-	T a -o '' &&
-	F '' -o '' &&
-	F a -ob 2> /dev/null &&
-	F -o a 2> /dev/null &&
-	F a -o 2> /dev/null &&
-	T -z '' -o -n x &&
-	T -z '' -o -n '' &&
-	T -z x -o -n x &&
-	F -z x -o -n ''
-	report_np $? "oflag (obsolescent)"
+	$t '' -o '' 2> /dev/null
+	if test $? -ge 2; then
+		harmless "oflag"
+	else
+		T a -o b &&
+		T a -o '' &&
+		F '' -o '' &&
+		F a -ob 2> /dev/null &&
+		F -o a 2> /dev/null &&
+		F a -o 2> /dev/null &&
+		T -z '' -o -n x &&
+		T -z '' -o -n '' &&
+		T -z x -o -n x &&
+		F -z x -o -n ''
+		report_harm $? "oflag"
+	fi
 }
 
 excl ()
@@ -459,38 +483,53 @@ excl ()
 
 excl_prec ()
 {
-	T -z '' -a ! -n '' &&
-	T ! -n '' -a -z '' &&
-	F ! '' -a ''
-	report_np $? "excl_prec (obsolescent)"
+	$t ! '' -a '' 2> /dev/null
+	if test $? -ge 2; then
+		harmless "excl_prec"
+	else
+		T -z '' -a ! -n '' &&
+		T ! -n '' -a -z '' &&
+		F ! '' -a ''
+		report_harm $? "excl_prec"
+	fi
 }
 
 oflag_aflag ()
 {
-	T xx -o xx -a xx &&
-	T xx -o xx -a '' &&
-	T xx -o '' -a xx &&
-	T xx -o '' -a '' &&
-	T '' -o xx -a xx &&
-	F '' -o xx -a '' &&
-	F '' -o '' -a xx &&
-	F '' -o '' -a ''
-	report_np $? "oflag_aflag (obsolescent)"
+	$t xx -o xx -a xx 2> /dev/null
+	if test $? -ge 2; then
+		harmless "oflag_aflag"
+	else
+		T xx -o xx -a xx &&
+		T xx -o xx -a '' &&
+		T xx -o '' -a xx &&
+		T xx -o '' -a '' &&
+		T '' -o xx -a xx &&
+		F '' -o xx -a '' &&
+		F '' -o '' -a xx &&
+		F '' -o '' -a ''
+		report_harm $? "oflag_aflag"
+	fi
 }
 
 parenthesis ()
 {
-	T xx -o \( xx -a xx \) &&
-	T xx -o \( xx -a '' \) &&
-	T xx -o \( '' -a xx \) &&
-	T xx -o \( '' -a '' \) &&
-	T '' -o \( xx -a xx \) &&
-	F '' -o \( xx -a '' \) &&
-	F '' -o \( '' -a xx \) &&
-	F '' -o \( '' -a '' \) &&
-	T \( xx -a xx \) &&
-	F \(xx = xx\)
-	report_np $? "parenthesis (obsolescent)"
+	$t '(' -e / ')' 2> /dev/null
+	if test $? -ge 2; then
+		harmless "parenthesis"
+	else
+		T xx -o \( xx -a xx \) &&
+		T xx -o \( xx -a '' \) &&
+		T xx -o \( '' -a xx \) &&
+		T xx -o \( '' -a '' \) &&
+		T '' -o \( xx -a xx \) &&
+		F '' -o \( xx -a '' \) &&
+		F '' -o \( '' -a xx \) &&
+		F '' -o \( '' -a '' \) &&
+		T \( xx -a xx \) &&
+		F \(xx = xx\)
+		report_harm $? "parenthesis"
+	fi
 }
 
 multiexcl ()
@@ -536,8 +575,13 @@ prec ()
 
 np_prec ()
 {
-	T -n -a -n 2> /dev/null
-	report_np $? "np_prec (obsolescent) (questionable)"
+	$t '' -a '' 2> /dev/null
+	if test $? -ge 2; then
+		harmless "np_prec (questionable)"
+	else
+		T -n -a -n 2> /dev/null
+		report_harm $? "np_prec (questionable)"
+	fi
 }
 
 Sflag ()
