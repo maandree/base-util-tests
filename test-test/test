@@ -537,7 +537,7 @@ prec ()
 np_prec ()
 {
 	T -n -a -n 2> /dev/null
-	report_np $? "np_prec (obsolescent)"
+	report_np $? "np_prec (obsolescent) (questionable)"
 }
 
 Sflag ()
