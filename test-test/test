@@ -50,15 +50,39 @@ T ()
 
 F ()
 {
-    ! $t "$@" && ! $b "$@" \]
+    $t "$@"
+    A=$?
+    $b "$@" \]
+    B=$?
+    test $A = 1 && test $B = 1
+}
+
+FX ()
+{
+    $t "$@"
+    A=$?
+    $b "$@" \]
+    B=$?
+    test $A -ge 1 && test $B -ge 1
+}
+
+FAIL ()
+{
+    $t "$@"
+    A=$?
+    $b "$@" \]
+    B=$?
+    test $A -ge 2 && test $B -ge 2
 }
 
 
 bracket ()
 {
-	! $t -e . \] 2> /dev/null &&
+	$t -e . \] 2> /dev/null &&
+	test $? -eq 2 &&
 	$b -e . \] &&
-	! $b -e . \] -e . 2> /dev/null
+	$b -e . \] -e . 2> /dev/null &&
+	test $? -eq 2
 	report $? "bracket"
 }
 
@@ -333,7 +357,7 @@ eq_flag ()
 	T 1 -eq 1 &&
 	T 1 -eq 01 &&
 	F 1 -eq 0 &&
-	F a -eq a 2> /dev/null &&
+	FX a -eq a 2> /dev/null &&
 	T -1 -eq -1 &&
 	T 1 -eq +1
 	report $? "eq_flag"
@@ -344,7 +368,7 @@ ne_flag ()
 	T 1 -ne 2 &&
 	F 1 -ne 1 &&
 	F 1 -ne 01 &&
-	F a -ne b 2> /dev/null &&
+	FX a -ne b 2> /dev/null &&
 	T -1 -ne -2
 	report $? "ne_flag"
 }
@@ -354,7 +378,7 @@ gt_flag ()
 	T 2 -gt 1 &&
 	T 02 -gt 1 &&
 	F 1 -gt 2 &&
-	F b -gt a 2> /dev/null &&
+	FX b -gt a 2> /dev/null &&
 	T -1 -gt -2 &&
 	F 1 -gt 1
 	report $? "gt_flag"
@@ -365,8 +389,8 @@ ge_flag ()
 	T 2 -ge 1 &&
 	T 02 -ge 1 &&
 	F 1 -ge 2 &&
-	F b -ge a 2> /dev/null &&
-	F a -ge a 2> /dev/null &&
+	FX b -ge a 2> /dev/null &&
+	FX a -ge a 2> /dev/null &&
 	T -1 -ge -2 &&
 	T 1 -ge 1 &&
 	T 1 -ge +1
@@ -378,7 +402,7 @@ lt_flag ()
 	T 1 -lt 2 &&
 	T 1 -lt 02 &&
 	F 2 -lt 1 &&
-	F a -lt b 2> /dev/null &&
+	FX a -lt b 2> /dev/null &&
 	T -2 -lt -1 &&
 	F 1 -lt 1
 	report $? "lt_flag"
@@ -389,8 +413,8 @@ le_flag ()
 	T 1 -le 2 &&
 	T 1 -le 02 &&
 	F 2 -le 1 &&
-	F a -le b 2> /dev/null &&
-	F a -le a 2> /dev/null &&
+	FX a -le b 2> /dev/null &&
+	FX a -le a 2> /dev/null &&
 	T -2 -le -1 &&
 	T 1 -le 1 &&
 	T +1 -le 1
@@ -443,9 +467,9 @@ aflag ()
 	else
 		T a -a b &&
 		F a -a '' &&
-		F a -ab 2> /dev/null &&
-		F a -a 2> /dev/null &&
-		F -a a 2> /dev/null &&
+		FAIL a -ab 2> /dev/null &&
+		FX a -a 2> /dev/null &&
+		FX -a a 2> /dev/null &&
 		T -z '' -a -n x &&
 		F -z '' -a -n '' &&
 		F -z x -a -n x &&
@@ -463,9 +487,9 @@ oflag ()
 		T a -o b &&
 		T a -o '' &&
 		F '' -o '' &&
-		F a -ob 2> /dev/null &&
-		F -o a 2> /dev/null &&
-		F a -o 2> /dev/null &&
+		FAIL a -ob 2> /dev/null &&
+		FX -o a 2> /dev/null &&
+		FX a -o 2> /dev/null &&
 		T -z '' -o -n x &&
 		T -z '' -o -n '' &&
 		T -z x -o -n x &&
@@ -477,7 +501,7 @@ oflag ()
 excl ()
 {
 	T ! -n '' &&
-	F !-n '' 2> /dev/null
+	FAIL !-n '' 2> /dev/null
 	report $? "excl"
 }
 
@@ -490,7 +514,7 @@ excl_prec ()
 		T -z '' -a ! -n '' &&
 		T ! -n '' -a -z '' &&
 		F ! '' -a ''
-		report_harm $? "excl_prec"
+		report_harm $? "excl_prec (questionable)"
 	fi
 }
 
@@ -577,10 +601,10 @@ np_prec ()
 {
 	$t '' -a '' 2> /dev/null
 	if test $? -ge 2; then
-		harmless "np_prec (questionable)"
+		harmless "np_prec"
 	else
 		T -n -a -n 2> /dev/null
-		report_harm $? "np_prec (questionable)"
+		report_harm $? "np_prec"
 	fi
 }
 
@@ -622,12 +646,24 @@ Eflag ()
 	rmdir tmp2 tmp3
 }
 
+not_eq_not ()
+{
+	T ! = !
+	report $? "not_eq_not"
+}
+
+eq_parenthesis ()
+{
+	F \( = \)
+	report $? "eq_parenthesis"
+}
 
 if test $# = 0; then
 	set bracket bflag cflag dflag eflag fflag gflag hflag_1 hflag_2 kflag Lflag_1 Lflag_2 nflag \
 	    pflag rflag sflag tflag uflag wflag xflag_f xflag_d zflag string eq_sign ne_sign eq_flag \
 	    ne_flag gt_flag ge_flag lt_flag le_flag ef_flag nt_flag ot_flag aflag oflag excl Eflag \
-	    excl_prec oflag_aflag parenthesis multiexcl multiexcl_many bigint prec np_prec Sflag
+	    excl_prec oflag_aflag parenthesis multiexcl multiexcl_many bigint prec np_prec Sflag \
+	    not_eq_not eq_parenthesis
 fi
 (
 for f in $@; do
