@@ -78,11 +78,11 @@ FAIL ()
 
 bracket ()
 {
-	$t -e . \] 2> /dev/null &&
-	test $? -eq 2 &&
-	$b -e . \] &&
-	$b -e . \] -e . 2> /dev/null &&
-	test $? -eq 2
+	$t -e . \] 2> /dev/null
+	A=$?
+	$b -e . \] -e . 2> /dev/null
+	B=$?
+	$b -e . \] && test $A -eq 2 && test $B -eq 2
 	report $? "bracket"
 }
 
