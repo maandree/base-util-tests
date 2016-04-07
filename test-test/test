@@ -29,7 +29,7 @@ report_np ()
 	fi
 }
 
-report_harm ()
+report_obsharm ()
 {
 	if test $1 = 0; then
 		printf "\033[1;33mTest %s (obsolescent, harmful) OK (NON-STANDARD)\033[m\n" "$2"
@@ -38,9 +38,42 @@ report_harm ()
 	fi
 }
 
-harmless ()
+obsharmless ()
 {
 	printf "\033[1;32mTest %s (obsolescent, harmful) NOT SUPPORTED (NON-STANDARD)\033[m\n" "$1"
+}
+
+report_harm ()
+{
+	if test $1 = 0; then
+		printf "\033[1;33mTest %s (harmful) OK (NON-STANDARD)\033[m\n" "$2"
+	else
+		printf "\033[1;31mTest %s (harmful) FAILED (NON-STANDARD)\033[m\n" "$2"
+	fi
+}
+
+harmless ()
+{
+	printf "\033[1;32mTest %s (harmful) NOT SUPPORTED (NON-STANDARD)\033[m\n" "$1"
+}
+
+nosupport ()
+{
+	printf "\033[1;33mTest %s NOT SUPPORTED (NON-STANDARD)\033[m\n" "$1"
+}
+
+supported ()
+{
+	$t "$@" 2> /dev/null
+	test $? -lt 2
+}
+
+xsleep ()
+{
+	python3 <<EOF
+import time
+time.sleep($1)
+EOF
 }
 
 T ()
@@ -343,6 +376,20 @@ eq_sign ()
 	report $? "eq_sign"
 }
 
+eqeq_sign ()
+{
+	$t a == b 2> /dev/null
+	if test $? -eq 2; then
+		nosupport "eqeq_sign (redundant)"
+	else
+		T a == a &&
+		F a == b &&
+		F 1 == 01 &&
+		T a=b
+		report_np $? "eqeq_sign (redundant)"
+	fi
+}
+
 ne_sign ()
 {
 	T a != b &&
@@ -461,9 +508,8 @@ ot_flag ()
 
 aflag ()
 {
-	$t '' -a '' 2> /dev/null
-	if test $? -ge 2; then
-		harmless "aflag"
+	if ! supported '' -a ''; then
+		obsharmless "aflag"
 	else
 		T a -a b &&
 		F a -a '' &&
@@ -474,15 +520,14 @@ aflag ()
 		F -z '' -a -n '' &&
 		F -z x -a -n x &&
 		F -z x -a -n ''
-		report_harm $? "aflag"
+		report_obsharm $? "aflag"
 	fi
 }
 
 oflag ()
 {
-	$t '' -o '' 2> /dev/null
-	if test $? -ge 2; then
-		harmless "oflag"
+	if ! supported '' -o ''; then
+		obsharmless "oflag"
 	else
 		T a -o b &&
 		T a -o '' &&
@@ -494,7 +539,7 @@ oflag ()
 		T -z '' -o -n '' &&
 		T -z x -o -n x &&
 		F -z x -o -n ''
-		report_harm $? "oflag"
+		report_obsharm $? "oflag"
 	fi
 }
 
@@ -507,22 +552,20 @@ excl ()
 
 excl_prec ()
 {
-	$t ! '' -a '' 2> /dev/null
-	if test $? -ge 2; then
-		harmless "excl_prec"
+	if ! supported ! '' -a ''; then
+		obsharmless "excl_prec"
 	else
 		T -z '' -a ! -n '' &&
 		T ! -n '' -a -z '' &&
 		F ! '' -a ''
-		report_harm $? "excl_prec (questionable)"
+		report_obsharm $? "excl_prec (questionable)"
 	fi
 }
 
 oflag_aflag ()
 {
-	$t xx -o xx -a xx 2> /dev/null
-	if test $? -ge 2; then
-		harmless "oflag_aflag"
+	if ! supported xx -o xx -a xx; then
+		obsharmless "oflag_aflag"
 	else
 		T xx -o xx -a xx &&
 		T xx -o xx -a '' &&
@@ -532,15 +575,14 @@ oflag_aflag ()
 		F '' -o xx -a '' &&
 		F '' -o '' -a xx &&
 		F '' -o '' -a ''
-		report_harm $? "oflag_aflag"
+		report_obsharm $? "oflag_aflag"
 	fi
 }
 
 parenthesis ()
 {
-	$t '(' -e / ')' 2> /dev/null
-	if test $? -ge 2; then
-		harmless "parenthesis"
+	if ! supported '(' -e / ')'; then
+		obsharmless "parenthesis"
 	else
 		T xx -o \( xx -a xx \) &&
 		T xx -o \( xx -a '' \) &&
@@ -552,7 +594,7 @@ parenthesis ()
 		F '' -o \( '' -a '' \) &&
 		T \( xx -a xx \) &&
 		F \(xx = xx\)
-		report_harm $? "parenthesis"
+		report_obsharm $? "parenthesis"
 	fi
 }
 
@@ -599,12 +641,11 @@ prec ()
 
 np_prec ()
 {
-	$t '' -a '' 2> /dev/null
-	if test $? -ge 2; then
-		harmless "np_prec"
+	if ! supported '' -a ''; then
+		obsharmless "np_prec"
 	else
 		T -n -a -n 2> /dev/null
-		report_harm $? "np_prec"
+		report_obsharm $? "np_prec"
 	fi
 }
 
@@ -658,12 +699,131 @@ eq_parenthesis ()
 	report $? "eq_parenthesis"
 }
 
+lt_sign ()
+{
+	if ! supported '' \< ''; then
+		harmless "lt_sign"
+	else
+		F '' \< '' &&
+		T '' \< a &&
+		F a \< '' &&
+		F a \< a &&
+		T a \< b &&
+		F b \< a &&
+		T A \< a &&
+		F a \< A &&
+		T A \< b &&
+		F b \< A &&
+		F z \< aa &&
+		T aa \< z
+		report_harm $? "lt_sign"
+	fi
+}
+
+le_sign ()
+{
+	if ! supported '' \<= ''; then
+		harmless "le_sign"
+	else
+		T '' \<= '' &&
+		T '' \<= a &&
+		F a \<= '' &&
+		T a \<= a &&
+		T a \<= b &&
+		F b \<= a &&
+		T A \<= a &&
+		F a \<= A &&
+		T A \<= b &&
+		F b \<= A &&
+		F z \<= aa &&
+		T aa \<= z
+		report_harm $? "le_sign"
+	fi
+}
+
+gt_sign ()
+{
+	if ! supported '' \> ''; then
+		harmless "gt_sign"
+	else
+		F '' \> '' &&
+		F '' \> a &&
+		T a \> '' &&
+		F a \> a &&
+		F a \> b &&
+		T b \> a &&
+		F A \> a &&
+		T a \> A &&
+		F A \> b &&
+		T b \> A &&
+		T z \> aa &&
+		F aa \> z
+		report_harm $? "gt_sign"
+	fi
+}
+
+ge_sign ()
+{
+	if ! supported '' \>= ''; then
+		harmless "ge_sign"
+	else
+		T '' \>= '' &&
+		F '' \>= a &&
+		T a \>= '' &&
+		T a \>= a &&
+		F a \>= b &&
+		T b \>= a &&
+		F A \>= a &&
+		T a \>= A &&
+		F A \>= b &&
+		T b \>= A &&
+		T z \>= aa &&
+		F aa \>= z
+		report_harm $? "ge_sign"
+	fi
+}
+
+Nflag ()
+{
+	if ! supported -N "$0"; then
+		harmless "Nflag"
+	else
+		if test -e tmp; then
+			rm tmp
+		fi
+		F -N tmp
+		r1=$?
+		touch tmp
+		xsleep 1.001
+		touch -m tmp
+		T -N tmp
+		r2=$?
+		touch -a tmp
+		F -N tmp
+		r3=$?
+		# And for good measure {
+		rm tmp
+		touch tmp ; touch -a tmp
+		F -N tmp
+		r4=$?
+		xsleep 0.01
+		rm tmp
+		touch tmp ; touch -a tmp
+		F -N tmp
+		r5=$?
+		# }
+		test $r1 = 0 && test $r2 = 0 && test $r3 = 0 && test $r4 = 0 && test $r5 = 0
+		report_harm $? "Nflag"
+		rm tmp
+	fi
+}
+
 if test $# = 0; then
 	set bracket bflag cflag dflag eflag fflag gflag hflag_1 hflag_2 kflag Lflag_1 Lflag_2 nflag \
 	    pflag rflag sflag tflag uflag wflag xflag_f xflag_d zflag string eq_sign ne_sign eq_flag \
 	    ne_flag gt_flag ge_flag lt_flag le_flag ef_flag nt_flag ot_flag aflag oflag excl Eflag \
 	    excl_prec oflag_aflag parenthesis multiexcl multiexcl_many bigint prec np_prec Sflag \
-	    not_eq_not eq_parenthesis
+	    not_eq_not eq_parenthesis eqeq_sign lt_sign le_sign gt_sign ge_sign Nflag
 fi
 (
 for f in $@; do
