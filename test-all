@@ -2,7 +2,7 @@
 
 cd -- "$(dirname "$0")"
 
-function all()
+all ()
 {
 	echo patch md5sum rawshake256sum rawshake512sum sha1sum sha224sum sha256sum sha3-224sum \
 	     sha3-256sum sha3-384sum sha3-512sum sha384sum sha512-224sum sha512-256sum sha512sum \
