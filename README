@@ -26,7 +26,7 @@ You can also run indiviual tests:
 
 	env [PREFIX=valgrind] [<UTIL>=<pathname>] ./<util>-test/test [<tests>...]
 
-(<UTIL> is uppercase of <util> with _ instead of - (that is, `tr [a-z-] [A-Z_]`))
+(<UTIL> is uppercase of <util> with _ instead of - (that is, `tr '[a-z-]' '[A-Z_]'`))
 
 here, <pathname> usually require the prefix ../ unless it is
 an absolute path, but sometimes the prefix ../../ is required.
