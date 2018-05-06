@@ -96,10 +96,24 @@ EOF
 	rm tmp
 }
 
+utf8 ()
+{
+        cat > tmp <<EOF
+åäö𝔘
+åäö𝔘
+åäö𝔘
+åäö𝔘
+åäö𝔘
+EOF
+        diff <($y 'åäö𝔘' | head -n 5) tmp > /dev/null
+        report $? "utf8"
+        rm tmp
+}
+
 
 
 if test $# = 0; then
-	set args0 args1 args2 args3 ddash
+	set args0 args1 args2 args3 ddash utf8
 fi
 (
 for f in $@; do
