@@ -25,7 +25,7 @@ exitvalue ()
 
 message ()
 {
-	if test -f /etc/nologin.txt; then
+	if test -r /etc/nologin.txt; then
 		diff <($n) /etc/nologin.txt > /dev/null
 		report $? "message (with /etc/nologin.txt)"
 	else
