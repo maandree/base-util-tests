@@ -2,7 +2,7 @@
 
 cd -- "$(dirname "$0")"
 if test -z "$BASENAME"; then
-	BASENAME=../basename
+	BASENAME=../../basename
 fi
 b="$PREFIX $BASENAME"
 
@@ -21,7 +21,13 @@ ddash ()
 {
 	test "$($b -- x)" = "x"
 	report $? "ddash"
-	# http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap12.html#tag_12_02
+	# http://pubs.opengroup.org/onlinepubs/9699919799/utilities/basename.html
+}
+
+ddash_suf ()
+{
+	test "$($b -- x.a a)" = "x."
+	report $? "ddash_suf"
 }
 
 lf ()
@@ -104,8 +110,8 @@ step_6_longer ()
 
 
 if test $# = 0; then
-	set ddash lf step_1 step_2 step_3 step_4 step_5 step_4_5 step_6 step_6_4 \
-	    step_6_full step_6_mismatch step_6_longer
+	set ddash ddash_suf lf step_1 step_2 step_3 step_4 step_5 step_4_5 step_6 \
+	    step_6_4 step_6_full step_6_mismatch step_6_longer
 fi
 (
 for f in $@; do
