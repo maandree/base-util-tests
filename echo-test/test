@@ -2,7 +2,7 @@
 
 cd -- "$(dirname "$0")"
 if test -z "$ECHO"; then
-	TRUE=../echo
+	ECHO=../echo
 fi
 e="$PREFIX $ECHO"
 N=10
