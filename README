@@ -9,12 +9,12 @@ To test your implementations run
 
 	env EPATH=<path> ./test-all [<utils>...]
 
-If you have exec-as installed, and what to test
+If you have exec-as installed, and want to test a
 multi-call binary, run
 
 	env EXECBOX=<binary> ./test-all [<utils>...]
 
-you also copy all files into <path> and just run
+You can also copy all files into <path> and just run
 
 	./test [<utils>...]
 
@@ -22,24 +22,24 @@ To run the utilities under valgrind run
 
 	env PREFIX=valgrind ./test-all [<utils>...]
 
-You can also run indiviual tests:
+You can also run individual tests:
 
 	env [PREFIX=valgrind] [<UTIL>=<pathname>] ./<util>-test/test [<tests>...]
 
 (<UTIL> is uppercase of <util> with _ instead of - (that is, `tr '[a-z-]' '[A-Z_]'`))
 
-here, <pathname> usually require the prefix ../ unless it is
+Here, <pathname> usually requires the prefix ../ unless it is
 an absolute path, but sometimes the prefix ../../ is required.
 Relative paths are always relative to ./<util>-test/, or
 subdirectory of ./<util>-test/, not to the current working
 directory.
 
-The exit status for ./<util>-test/test are:
+The exit statuses for ./<util>-test/test are:
 
 	0:  All tests passed.
-	1:  The implemention is standards-compliant (as far as
+	1:  The implementation is standards-compliant (as far as
             the test can tell), but at least one test failed.
-	2:  The implemention is not standards-compliant.
+	2:  The implementation is not standards-compliant.
 
 
 NOTES FOR PATCH-TEST
@@ -49,7 +49,7 @@ NOTES FOR PATCH-TEST
 	asking the user questions. If the -f flag is not
 	available or does something else, set FORCE_PATCH
 	to the path and flags for patch(1) that runs patch(1)
-	qwithout asking questions. If the path is relative,
-	it is relative to a direct subdiretory of ./patch-test/
+	without asking questions. If the path is relative,
+	it is relative to a direct subdirectory of ./patch-test/
 	(../../ prefix.) You may also have to change some
-	strings in ./patct-test/__test.
+	strings in ./patch-test/__test.
